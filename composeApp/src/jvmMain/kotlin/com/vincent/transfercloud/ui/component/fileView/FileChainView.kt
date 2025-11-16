@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -47,7 +48,7 @@ fun FileChainView(
 				)
 			}
 			if (index < chain.size - 1) {
-				Icon(Icons.AutoMirrored.Filled.ArrowRight, null)
+				Icon(Icons.Default.ChevronRight, null)
 			}
 		}
 	}

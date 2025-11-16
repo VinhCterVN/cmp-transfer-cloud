@@ -1,7 +1,7 @@
 package com.vincent.transfercloud.data.dto
 
-import kotlinx.datetime.LocalDateTime
 import kotlinx.serialization.Serializable
+import java.sql.Timestamp
 import java.util.UUID
 
 @Serializable
@@ -23,5 +23,5 @@ data class FileOutputDto(
 	val parentId: UUID?,
 	val ownerId: UUID,
 	val isStarred: Boolean,
-	val createdAt: LocalDateTime
+	val createdAt: Timestamp
 )

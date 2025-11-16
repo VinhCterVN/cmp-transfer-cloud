@@ -14,7 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FileUpload
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,16 +32,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vincent.transfercloud.ui.component.fileView.FileChainView
-import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
-import com.vincent.transfercloud.ui.viewModel.AppViewModel
+import com.vincent.transfercloud.ui.theme.LabelLineSmall
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import java.awt.datatransfer.DataFlavor
 import kotlin.time.ExperimentalTime
@@ -50,8 +48,6 @@ import kotlin.time.Instant
 @OptIn(ExperimentalMaterialApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun FilesArea(
-	appState: AppState = koinInject<AppState>(),
-	viewModel: AppViewModel = koinInject<AppViewModel>()
 ) {
 	val listState = rememberLazyGridState()
 	val scaffoldState = LocalBottomSheetScaffoldState.current
@@ -61,7 +57,6 @@ fun FilesArea(
 			Res.readBytes("files/empty.json").decodeToString()
 		)
 	}
-
 	var showTargetBorder by remember { mutableStateOf(false) }
 	var targetText by remember { mutableStateOf("Drop Here") }
 	val coroutineScope = rememberCoroutineScope()
@@ -115,32 +110,44 @@ fun FilesArea(
 				contentPadding = PaddingValues(8.dp),
 				modifier = Modifier.weight(1f)
 			) {
-				items(30) { index ->
+				items(15) { index ->
 					Card(
 						onClick = {
-							scope.launch { scaffoldState.snackbarHostState.showSnackbar("Hello From SnackBar") }
+							scope.launch {
+								scaffoldState.snackbarHostState.showSnackbar(
+									"Hello From SnackBar",
+									actionLabel = "Hide",
+								)
+							}
 						},
 						colors = CardDefaults.cardColors(
-							containerColor = MaterialTheme.colorScheme.primaryContainer
+							containerColor = MaterialTheme.colorScheme.surfaceVariant
 						),
 						elevation = CardDefaults.cardElevation(2.dp),
 						shape = RoundedCornerShape(12.dp),
 						modifier = Modifier
 							.padding(8.dp)
-							.height(50.dp)
+							.height(55.dp)
 					) {
 						Row(
 							Modifier.fillMaxSize().padding(horizontal = 12.dp),
 							verticalAlignment = Alignment.CenterVertically,
-							horizontalArrangement = Arrangement.spacedBy(8.dp)
+							horizontalArrangement = Arrangement.spacedBy(12.dp)
 						) {
-							Icon(Icons.Default.FileUpload, null)
-							Text(
-								"A new File $index", style = TextStyle(
-									fontWeight = FontWeight.SemiBold,
-									fontSize = 16.sp
+							Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+							Column(verticalArrangement = Arrangement.Center) {
+								Text(
+									"A new File $index", style = TextStyle(
+										fontWeight = FontWeight.SemiBold,
+										fontSize = 16.sp
+									)
 								)
-							)
+
+								Text(
+									"Last seen",
+									style = LabelLineSmall.copy(fontWeight = FontWeight.Normal, fontSize = 14.sp)
+								)
+							}
 							Spacer(Modifier.weight(1f))
 
 							Box(
@@ -153,7 +160,8 @@ fun FilesArea(
 								Icon(
 									Icons.Default.MoreVert,
 									null,
-									Modifier.size(18.dp)
+									tint = MaterialTheme.colorScheme.onSurfaceVariant,
+									modifier = Modifier.size(18.dp)
 								)
 							}
 						}
@@ -175,7 +183,6 @@ fun FilesArea(
 fun Long.toDateString(): String {
 	val instant = Instant.fromEpochMilliseconds(this)
 	val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
-
 	val dayOfWeek = localDateTime.dayOfWeek.name.take(3).lowercase()
 		.replaceFirstChar { it.uppercase() }
 	val day = localDateTime.day

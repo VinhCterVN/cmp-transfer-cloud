@@ -4,7 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserInputDto(
-	val id: String? = null,
 	val fullName: String,
 	val email: String,
 	val password: String,
@@ -17,4 +16,5 @@ data class UserOutputDto(
 	val fullName: String,
 	val email: String,
 	val avatarUrl: String? = null,
+	val rootFolderId: String? = null,
 )

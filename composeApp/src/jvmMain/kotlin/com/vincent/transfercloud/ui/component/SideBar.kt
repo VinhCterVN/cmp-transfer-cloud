@@ -6,20 +6,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material.icons.outlined.FolderShared
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.rounded.FolderOpen
-import androidx.compose.material.icons.rounded.FolderShared
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vincent.transfercloud.ui.state.AppState
@@ -30,13 +27,10 @@ import org.koin.compose.koinInject
 
 @Composable
 fun SideBar(
-	viewModel: AppViewModel = koinInject<AppViewModel>(),
 	appState: AppState = koinInject<AppState>()
 ) {
-
 	val currentIndex = appState.currentIndex
 	var selectedIndex by remember { mutableStateOf(0) }
-
 	val sideBarItems = listOf(
 		SideBarOption(
 			"Home",
@@ -65,23 +59,27 @@ fun SideBar(
 			onClick = {
 				appState.isComposing.value = true
 			},
-			icon = { Icon(Icons.Filled.Edit, null) },
-			text = { Text("Compose") }
+			icon = { Icon(Icons.Filled.Add, null) },
+			text = { Text("New") }
 		)
 		Spacer(Modifier.height(8.dp))
 		sideBarItems.forEachIndexed { index, item ->
 			NavigationDrawerItem(
 				icon = { Icon(if (selectedIndex == index) item.selectedIcon else item.unselectedIcon, null) },
-				label = { Text(item.name, style = LabelLineSmall.copy(
-					fontSize = 14.sp
-				)) },
+				label = {
+					Text(
+						item.name, style = LabelLineSmall.copy(
+							fontSize = 14.sp
+						)
+					)
+				},
 				selected = selectedIndex == index,
 				onClick = item.onClick,
 				shape = CircleShape,
 				colors = NavigationDrawerItemDefaults.colors(
 					selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(0.75f)
 				),
-				modifier = Modifier.height(40.dp)
+				modifier = Modifier.height(35.dp)
 			)
 		}
 	}

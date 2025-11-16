@@ -51,7 +51,6 @@ fun FileLargePanel(
 		FloatingMenuItem(Icons.AutoMirrored.Filled.Label, "Label") {},
 	)
 
-	Scaffold {
 		Box(
 			Modifier.fillMaxSize()
 		) {
@@ -122,7 +121,6 @@ fun FileLargePanel(
 				}
 			}
 		}
-	}
 }
 
 data class FloatingMenuItem(

@@ -29,11 +29,16 @@ kotlin {
 			implementation(libs.koin.compose.viewmodel)
 			implementation(libs.compottie)
 			implementation(libs.voyager)
+			implementation(libs.voyager.transitions)
 			implementation(libs.coil.compose)
 			implementation(libs.coil.network)
 			implementation(libs.ktor.network)
 			implementation(libs.faker)
 
+			implementation(libs.ktor.core)
+			implementation(libs.ktor.cio)
+			implementation(libs.ktor.clientContentNegotiation)
+			implementation(libs.ktor.serialization.kotlinx.json)
 
 			implementation(projects.shared)
 		}

@@ -1,12 +1,11 @@
 package com.vincent.transfercloud.core.plugins
 
-import com.vincent.transfercloud.data.model.Files
-import com.vincent.transfercloud.data.model.Shares
-import com.vincent.transfercloud.data.model.Users
+import com.vincent.transfercloud.data.schema.*
 import io.ktor.server.application.*
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
+import javax.xml.crypto.Data
 
 fun Application.configDatabase() {
 	Database.connect(
@@ -15,6 +14,6 @@ fun Application.configDatabase() {
 	)
 
 	transaction {
-		SchemaUtils.create(Users, Files, Shares)
+		SchemaUtils.create(Users, Folders, Files, Shares, Activities)
 	}
 }

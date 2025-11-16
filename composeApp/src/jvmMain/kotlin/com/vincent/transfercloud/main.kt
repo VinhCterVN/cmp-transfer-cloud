@@ -15,7 +15,6 @@ import org.koin.dsl.module
 
 @OptIn(ExperimentalMaterial3Api::class)
 fun main() = application {
-
 	val state = rememberWindowState(
 		width = 1200.dp,
 		height = 800.dp,

@@ -8,15 +8,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
@@ -25,13 +25,12 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.state.AppState
-import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
+import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.cloud
-import transfercloud.composeapp.generated.resources.mail
 
 @Composable
 fun HeaderBar(
@@ -40,6 +39,7 @@ fun HeaderBar(
 ) {
 	val windowState = koinInject<WindowState>()
 	val currentUser by appState.currentUser.collectAsState()
+	val isDark by appState.darkTheme.collectAsState()
 	var expanded by rememberSaveable { mutableStateOf(false) }
 
 	Row(
@@ -74,9 +74,13 @@ fun HeaderBar(
 
 		Spacer(Modifier.weight(1f))
 
+		IconButton(onClick = { appState.darkTheme.value = !appState.darkTheme.value }) {
+			Icon(if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+		}
+
 		Box(Modifier.size(50.dp)) {
 			AsyncImage(
-				model = "https://i.pravatar.cc/150?u=${currentUser?.name ?: "James"}",
+				model = "https://i.pravatar.cc/150?u=${currentUser?.fullName ?: "James"}",
 				contentDescription = "Avatar",
 				contentScale = ContentScale.Crop,
 				modifier = Modifier.fillMaxSize()
@@ -93,20 +97,23 @@ fun HeaderBar(
 				shape = RoundedCornerShape(12.dp)
 			) {
 				DropdownMenuItem(
-					text = { Text(currentUser?.name ?: "Guest") },
+					text = { Text(currentUser?.fullName ?: "Guest") },
 					leadingIcon = { Icon(Icons.Default.Person, null) },
-					onClick = {}
+					onClick = {},
+					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 				DropdownMenuItem(
 					text = { Text("Settings") },
 					leadingIcon = { Icon(Icons.Default.Settings, null) },
-					onClick = {}
+					onClick = {},
+					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 				HorizontalDivider()
 				DropdownMenuItem(
 					text = { Text("Logout") },
 					leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
-					onClick = { viewModel.logout() }
+					onClick = { viewModel.logout() },
+					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 			}
 		}

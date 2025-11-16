@@ -1,7 +1,8 @@
-package com.vincent.transfercloud.ui.utils
+package com.vincent.transfercloud.utils
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
@@ -27,7 +28,7 @@ fun Modifier.dashedBorder(
         drawRoundRect(
             color = color,
             size = Size(size.width - strokeWidth.toPx(), size.height - strokeWidth.toPx()),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(cornerRadius.toPx()),
+            cornerRadius = CornerRadius(cornerRadius.toPx()),
             style = stroke
         )
     }

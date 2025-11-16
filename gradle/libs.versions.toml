@@ -51,9 +51,11 @@ compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "comp
 # Ktor
 ktor-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-clientContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
 ktor-network = { module = "io.ktor:ktor-network", version.ref = "ktor" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 voyager = { module = "cafe.adriel.voyager:voyager-navigator", version.ref = "voyager" }
+voyager-transitions = { module = "cafe.adriel.voyager:voyager-transitions", version.ref = "voyager" }
 #Faker
 faker = { module = "io.github.serpro69:kotlin-faker", version.ref = "faker" }
 

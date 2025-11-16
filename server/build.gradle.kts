@@ -26,9 +26,8 @@ dependencies {
 	implementation(libs.ktor.exposed.core)
 	implementation(libs.ktor.exposed.dao)
 	implementation(libs.ktor.exposed.jdbc)
-	implementation(libs.ktor.exposed.datetime)
-
-	implementation(libs.kotlinx.datetime)
+//	implementation(libs.ktor.exposed.datetime)
+	implementation("org.jetbrains.exposed:exposed-java-time:0.61.0")
 	implementation(libs.ktor.h2Database)
 	implementation(libs.postgresql)
 	implementation(libs.mindrot.jbcrypt)

@@ -1,0 +1,24 @@
+### GET request to example server
+GET https://examples.http-client.intellij.net/get
+    ?generated-in=IntelliJ IDEA
+
+###
+
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "vincent@mail.com",
+  "password": "abcabc"
+}
+###
+
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Hai Nam",
+  "email": "fbnguyenhainam@mail.com",
+  "password": "hainam"
+}
+###

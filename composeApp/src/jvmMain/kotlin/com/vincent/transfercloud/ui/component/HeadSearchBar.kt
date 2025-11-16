@@ -19,12 +19,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import com.vincent.transfercloud.ui.theme.MessageStyle
 
 @Composable
 fun HeadSearchBar() {
-
 	var query by rememberSaveable { mutableStateOf("") }
 	var isFocused by rememberSaveable { mutableStateOf(false) }
 
@@ -35,32 +36,30 @@ fun HeadSearchBar() {
 		singleLine = true,
 		modifier = Modifier.widthIn(max = 500.dp).onFocusChanged { isFocused = it.hasFocus },
 		textStyle = MessageStyle,
+	) { innerTextField ->
+		Row(
+			Modifier.background(
+				if (isFocused) MaterialTheme.colorScheme.primaryContainer.copy(0.75f) else MaterialTheme.colorScheme.surface,
+				CircleShape
+			).padding(vertical = 0.dp, horizontal = 12.dp),
+			verticalAlignment = Alignment.CenterVertically
+		) {
+			Icon(Icons.Filled.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 
-		decorationBox = @Composable { innerTextField ->
-			Row(
-				Modifier.background(
-					if (isFocused) MaterialTheme.colorScheme.primaryContainer.copy(0.9f) else MaterialTheme.colorScheme.surfaceContainerHigh,
-					CircleShape
-				).padding(vertical = 0.dp, horizontal = 12.dp),
-				verticalAlignment = Alignment.CenterVertically
-			) {
-				Icon(Icons.Filled.Search, null)
-
-				Box(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
-					if (query.isEmpty()) {
-						Text(
-							text = "Search file", style = LocalTextStyle.current.copy(
-								color = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.5f),
-							)
+			Box(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+				if (query.isEmpty()) {
+					Text(
+						text = "Search file", style = LocalTextStyle.current.copy(
+							color = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.5f),
 						)
-					}
-					innerTextField()
+					)
 				}
-				if (query.isNotEmpty()) IconButton(onClick = { query = "" }) {
-					Icon(Icons.Default.Clear, null)
-				}
-				else IconButton(onClick = { }) {}
+				innerTextField()
 			}
+			if (query.isNotEmpty()) IconButton(onClick = { query = "" }) {
+				Icon(Icons.Default.Clear, null, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand))
+			}
+			else IconButton(onClick = { }) {}
 		}
-	)
+	}
 }
