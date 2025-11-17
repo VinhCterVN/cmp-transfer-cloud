@@ -1,6 +1,5 @@
 package com.vincent.transfercloud.ui.screens.auth
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,10 +21,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
-import cafe.adriel.voyager.navigator.Navigator
-import cafe.adriel.voyager.transitions.SlideTransition
-import com.vincent.transfercloud.ui.navigation.AppScreen
+import com.vincent.transfercloud.ui.screens.TransferApp
 import com.vincent.transfercloud.ui.state.AppState
+import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.HeadLineMedium
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.AuthViewModel
@@ -35,35 +33,46 @@ import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.undraw_login
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthPage(
+fun AppGate(
 	appState: AppState = koinInject<AppState>(),
 	viewModel: AuthViewModel = AuthViewModel(appState)
 ) {
 	val scope = rememberCoroutineScope()
 	val windowState = koinInject<WindowState>()
 	val currentUser by appState.currentUser.collectAsState()
+	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val startDestination = AuthDestination.LOGIN
 	var selectedDestination by rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
 	var username: String by remember { mutableStateOf("") }
 	var email: String by remember { mutableStateOf("") }
 	var password: String by remember { mutableStateOf("") }
 
-	if (currentUser != null) Navigator(AppScreen) {
-		SlideTransition(
-			it, animationSpec = tween(
-				durationMillis = 500,
-				delayMillis = 100
+	LaunchedEffect(currentUser) {
+		if (currentUser == null) scope.launch {
+			scaffoldState.snackbarHostState.showSnackbar(
+				"You have logged out!",
+				actionLabel = "Hide",
+				duration = SnackbarDuration.Short
 			)
-		)
+		} else scope.launch {
+			scaffoldState.snackbarHostState.showSnackbar(
+				"Welcome ${currentUser!!.fullName}",
+				actionLabel = "Hide",
+				duration = SnackbarDuration.Short
+			)
+		}
 	}
+
+	if (currentUser != null) TransferApp()
 	else {
 		Box(
 			Modifier.fillMaxSize().background(
 				brush = Brush.linearGradient(
 					colors = listOf(
-						MaterialTheme.colorScheme.onPrimaryContainer,
-						MaterialTheme.colorScheme.onSecondaryContainer,
+						MaterialTheme.colorScheme.primaryContainer.copy(0.45f),
+						MaterialTheme.colorScheme.secondaryContainer.copy(0.45f),
 					),
 					start = Offset.Zero,
 					end = Offset.Infinite
@@ -194,13 +203,27 @@ fun AuthPage(
 									when (AuthDestination.entries[selectedDestination]) {
 										AuthDestination.LOGIN -> {
 											scope.launch {
-												viewModel.login(email, password)
+												val status = viewModel.login(email, password)
+												if (!status.isNullOrEmpty()) {
+													scaffoldState.snackbarHostState.showSnackbar(
+														status,
+														actionLabel = "Hide",
+														duration = SnackbarDuration.Short
+													)
+												}
 											}
 										}
 
 										AuthDestination.REGISTER -> {
 											scope.launch {
-												viewModel.register(username, email, password)
+												val status = viewModel.register(username, email, password)
+												if (!status.isNullOrEmpty()) {
+													scaffoldState.snackbarHostState.showSnackbar(
+														status,
+														actionLabel = "Hide",
+														duration = SnackbarDuration.Short
+													)
+												}
 											}
 										}
 									}

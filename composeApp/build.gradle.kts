@@ -35,9 +35,10 @@ kotlin {
 			implementation(libs.ktor.network)
 			implementation(libs.faker)
 
-			implementation(libs.ktor.core)
-			implementation(libs.ktor.cio)
-			implementation(libs.ktor.clientContentNegotiation)
+			implementation(libs.ktor.client.core)
+			implementation(libs.ktor.client.cio)
+			implementation(libs.ktor.client.contentNegotiation)
+			implementation(libs.ktor.client.logging)
 			implementation(libs.ktor.serialization.kotlinx.json)
 
 			implementation(projects.shared)
@@ -49,6 +50,8 @@ kotlin {
 			implementation(compose.desktop.currentOs)
 			implementation(libs.kotlinx.coroutinesSwing)
 			implementation(libs.splitpane.desktop)
+//			implementation(libs.slf4j.simple)
+			implementation(libs.logback.classic)
 		}
 	}
 }

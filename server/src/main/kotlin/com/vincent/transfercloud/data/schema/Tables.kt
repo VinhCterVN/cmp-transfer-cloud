@@ -1,11 +1,10 @@
-@file:OptIn(ExperimentalTime::class)
-
 package com.vincent.transfercloud.data.schema
 
+import com.vincent.transfercloud.data.enum.FileLocation
+import com.vincent.transfercloud.data.enum.SharePermission
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.javatime.CurrentTimestamp
 import org.jetbrains.exposed.sql.javatime.timestamp
-import kotlin.time.ExperimentalTime
 
 object Users : UUIDTable("users") {
 	val fullName = varchar("full_name", 255)
@@ -30,6 +29,7 @@ object Files : UUIDTable("files") {
 	val fileSize = long("file_size")
 	val mimeType = varchar("mime_type", 100)
 	val storagePath = varchar("storage_path", 500)
+	val location = enumerationByName("location", 20, FileLocation::class).default(FileLocation.CLOUD)
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 	val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
 }
@@ -41,17 +41,6 @@ object Shares : UUIDTable("shares") {
 	val sharedWithUserId = reference("shared_with_user_id", Users)
 	val permission = enumerationByName("permission", 20, SharePermission::class)
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
-}
-
-enum class SharePermission {
-	VIEW,
-	EDIT,
-	OWNER
-}
-
-enum class FileLocation {
-	LOCAL,
-	CLOUD
 }
 
 object Activities : UUIDTable("activities") {

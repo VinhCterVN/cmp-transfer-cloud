@@ -21,10 +21,9 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import cafe.adriel.voyager.navigator.Navigator
+import com.vincent.transfercloud.ui.component.FileLargePanel
 import com.vincent.transfercloud.ui.component.HeaderBar
 import com.vincent.transfercloud.ui.component.SideBar
-import com.vincent.transfercloud.ui.navigation.FileView
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.HorizontalSplitPane
 import org.jetbrains.compose.splitpane.rememberSplitPaneState
@@ -75,7 +74,7 @@ fun TransferApp() {
 					elevation = CardDefaults.cardElevation(2.dp),
 					colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
 				) {
-					Navigator(FileView())
+					FileLargePanel()
 				}
 			}
 

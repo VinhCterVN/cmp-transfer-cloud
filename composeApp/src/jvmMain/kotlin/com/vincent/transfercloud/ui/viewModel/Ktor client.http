@@ -17,8 +17,10 @@ POST http://localhost:8080/api/auth/register
 Content-Type: application/json
 
 {
-  "fullName": "Nguyen Hai Nam",
-  "email": "fbnguyenhainam@mail.com",
-  "password": "hainam"
+  "fullName": "John Doe",
+  "email": "johndoe@mail.com",
+  "password": "password123"
 }
+###
+GET http://localhost:8080/api/folders/af1f426c-36fc-4c3f-8b29-3c883b742682/0622a55d-d2ec-415a-a232-6579ad235d25
 ###

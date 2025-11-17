@@ -3,15 +3,10 @@ package com.vincent.transfercloud.core.server
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.json.Json
 import java.net.BindException
 
 object Server {
 	private const val PORT = 9090
-	val json = Json {
-		ignoreUnknownKeys = true
-		encodeDefaults = true
-	}
 	val selectorManager = ActorSelectorManager(Dispatchers.IO)
 	val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 	var server: BoundDatagramSocket? = null

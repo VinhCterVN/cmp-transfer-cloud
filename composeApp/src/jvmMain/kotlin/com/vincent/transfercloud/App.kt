@@ -10,7 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.vincent.transfercloud.ui.screens.auth.AuthPage
+import com.vincent.transfercloud.ui.screens.auth.AppGate
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.AppTheme
@@ -40,7 +40,7 @@ fun App(
 			},
 			snackbarHost = { SnackbarHost(hostState = scaffoldState.snackbarHostState) }
 		) { innerPadding ->
-			AuthPage()
+			AppGate()
 		}
 	}
 }

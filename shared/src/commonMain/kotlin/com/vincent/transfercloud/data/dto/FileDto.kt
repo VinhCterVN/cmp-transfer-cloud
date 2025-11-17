@@ -1,27 +1,29 @@
 package com.vincent.transfercloud.data.dto
 
+import com.vincent.transfercloud.data.enum.FileLocation
 import kotlinx.serialization.Serializable
-import java.sql.Timestamp
-import java.util.UUID
 
 @Serializable
 data class FileInputDto(
 	val name: String,
-	val size: Long,
-	val mimeType: String? = null,
-	val parentId: String? = null,   // ← Jackson/Kotlinx sẽ parse string -> UUID
-	val isStarred: Boolean = false
+	val folderId: String,
+	val ownerId: String,
+	val fileSize: Long,
+	val mimeType: String,
+	val storagePath: String,
+	val location: FileLocation = FileLocation.CLOUD
 )
 
-
+@Serializable
 data class FileOutputDto(
-	val id: UUID,
+	val id: String,
 	val name: String,
-	val type: String,
-	val mimeType: String?,
-	val size: Long,
-	val parentId: UUID?,
-	val ownerId: UUID,
-	val isStarred: Boolean,
-	val createdAt: Timestamp
+	val folderId: String,
+	val ownerId: String,
+	val fileSize: Long,
+	val mimeType: String,
+	val storagePath: String,
+	val location: FileLocation,
+	val createdAt: String,
+	val updatedAt: String
 )

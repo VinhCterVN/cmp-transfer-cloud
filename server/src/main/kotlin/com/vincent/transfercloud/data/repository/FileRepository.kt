@@ -2,16 +2,43 @@
 
 package com.vincent.transfercloud.data.repository
 
-import com.vincent.transfercloud.data.schema.*
+import com.vincent.transfercloud.data.dto.FolderOutputDto
+import com.vincent.transfercloud.data.dto.FolderWithContentsDto
+import com.vincent.transfercloud.data.enum.SharePermission
+import com.vincent.transfercloud.data.schema.Files
+import com.vincent.transfercloud.data.schema.Folders
+import com.vincent.transfercloud.data.schema.Shares
+import com.vincent.transfercloud.utils.toFileOutputDto
+import com.vincent.transfercloud.utils.toFolderOutputDto
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.UUID
+import java.util.*
 import kotlin.time.ExperimentalTime
 
 object FileRepository {
+	fun getFolderById(folderId: String, ownerId: String): FolderWithContentsDto? = transaction {
+		val folderUuid = UUID.fromString(folderId)
+		val ownerUuid = UUID.fromString(ownerId)
+		val folder = Folders.selectAll()
+			.where { (Folders.id eq folderUuid) and (Folders.ownerId eq ownerUuid) }
+			.singleOrNull()?.toFolderOutputDto() ?: return@transaction null
+		val subfolders = Folders.selectAll()
+			.where { (Folders.parentId eq folderUuid) and (Folders.ownerId eq ownerUuid) }
+			.map { it.toFolderOutputDto() }
+		val subfiles = Files.selectAll()
+			.where { (Files.folderId eq folderUuid) and (Files.ownerId eq ownerUuid) }
+			.map { it.toFileOutputDto() }
+
+		FolderWithContentsDto(
+			folder = folder,
+			subfolders = subfolders,
+			files = subfiles
+		)
+	}
 
 	fun createRootFolder(userId: UUID, folderName: String = "My Drive"): UUID {
 		return transaction {
@@ -23,13 +50,19 @@ object FileRepository {
 		}
 	}
 
-	fun createFolder(userId: UUID, folderName: String, parentFolderId: UUID): UUID {
+	fun createFolder(userId: String, folderName: String, parentFolderId: String): FolderOutputDto? {
 		return transaction {
-			Folders.insertAndGetId {
+			val ownerUuid = UUID.fromString(userId)
+			val parentUuid = UUID.fromString(parentFolderId)
+			val folderId = Folders.insertAndGetId {
 				it[name] = folderName
-				it[ownerId] = userId
-				it[parentId] = parentFolderId
+				it[ownerId] = ownerUuid
+				it[parentId] = parentUuid
 			}.value
+
+			Folders.selectAll()
+				.where { Folders.id eq folderId }
+				.singleOrNull()?.toFolderOutputDto()
 		}
 	}
 

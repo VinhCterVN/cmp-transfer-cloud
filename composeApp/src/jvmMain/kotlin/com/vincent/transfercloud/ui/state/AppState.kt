@@ -8,7 +8,8 @@ class AppState {
 	val darkTheme = MutableStateFlow(false)
 	val currentUser = MutableStateFlow<UserOutputDto?>(null)
 	val networkConfig = MutableStateFlow(NetworkConfig())
-	val isComposing = MutableStateFlow(false)
+	val isCreatingFolder = MutableStateFlow(false)
+	val currentFolder = MutableStateFlow("")
 	val currentIndex = MutableStateFlow(EmailIndex.INBOX)
 }
 

@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.EmailIndex
 import com.vincent.transfercloud.ui.theme.LabelLineSmall
-import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import org.koin.compose.koinInject
 
 @Composable
@@ -56,9 +55,7 @@ fun SideBar(
 		verticalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		ExtendedFloatingActionButton(
-			onClick = {
-				appState.isComposing.value = true
-			},
+			onClick = { appState.isCreatingFolder.value = true },
 			icon = { Icon(Icons.Filled.Add, null) },
 			text = { Text("New") }
 		)

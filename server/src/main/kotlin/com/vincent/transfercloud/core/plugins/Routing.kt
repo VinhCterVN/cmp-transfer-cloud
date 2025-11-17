@@ -2,26 +2,19 @@
 
 package com.vincent.transfercloud.core.plugins
 
-import com.vincent.transfercloud.data.dto.LoginRequestDto
-import com.vincent.transfercloud.data.dto.UserInputDto
-import com.vincent.transfercloud.data.dto.UserOutputDto
+import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.data.repository.AuthRepository
+import com.vincent.transfercloud.data.repository.FileRepository
 import com.vincent.transfercloud.data.repository.UserRepository
-import io.ktor.http.ContentType
+import com.vincent.transfercloud.utils.json
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.json.Json
-import java.util.UUID
-import kotlin.time.Clock
+import java.time.LocalDateTime
+import java.util.*
 import kotlin.time.ExperimentalTime
-
-val json = Json {
-	prettyPrint = true
-	isLenient = true
-	ignoreUnknownKeys = true
-}
 
 fun Application.configureRouting() {
 	routing {
@@ -30,7 +23,7 @@ fun Application.configureRouting() {
 		}
 
 		get("/api") {
-			call.respondText("Hello From Vincent - Exposed Database\n${Clock.System.now()}", contentType = ContentType.Text.Html)
+			call.respondText("Hello From Vincent - Exposed Database\n${LocalDateTime.now()}", contentType = ContentType.Text.Html)
 		}
 		get("/api/users") {
 			call.respond(UserRepository.getAll())
@@ -63,6 +56,32 @@ fun Application.configureRouting() {
 			println(user)
 			UserRepository.createUser(user)
 			call.respond("User created")
+		}
+		/**FILE MANIPULATION**/
+		get("/api/folders/{folder_id}/{owner_id}") {
+			val id = call.parameters["folder_id"] ?: return@get call.respond("Missing or malformed id")
+			val ownerId = call.parameters["owner_id"] ?: return@get call.respond("Missing or malformed owner id")
+			val folder = FileRepository.getFolderById(id, ownerId)
+			call.respond(
+				GetFolderContentsRequestDto(
+					folderId = id,
+					status = if (folder != null) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
+					message = if (folder != null) "Folder found" else "Folder not found",
+					data = folder
+				)
+			)
+		}
+
+		post("/api/folders") {
+			val req = call.receive<CreateFolderRequestDto>()
+			val res = FileRepository.createFolder(req.ownerId, req.folderName, req.parentFolderId)
+			call.respond(
+				CreateFolderResponseDto(
+					folder = res,
+					status = if (res != null) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
+					message = if (res != null) "Folder created" else "Failed to create folder"
+				)
+			)
 		}
 	}
 }

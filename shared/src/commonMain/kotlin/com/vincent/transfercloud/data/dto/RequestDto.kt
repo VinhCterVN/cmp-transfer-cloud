@@ -15,3 +15,10 @@ data class RegisterRequestDto(
 	val password: String,
 	val avatarUrl: String = "https://i.pravatar.cc/300"
 )
+
+@Serializable
+data class CreateFolderRequestDto(
+	val ownerId: String,
+	val folderName: String,
+	val parentFolderId: String
+)
