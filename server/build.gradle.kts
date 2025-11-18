@@ -9,7 +9,6 @@ group = "com.vincent.transfercloud"
 version = "1.0.0"
 application {
 	mainClass.set("com.vincent.transfercloud.ApplicationKt")
-
 //	val isDevelopment: Boolean = project.ext.has("development")
 	applicationDefaultJvmArgs = listOf("-Dio.ktor.development=true")
 }
@@ -32,6 +31,7 @@ dependencies {
 	implementation(libs.postgresql)
 	implementation(libs.mindrot.jbcrypt)
 
+	implementation("io.github.serpro69:kotlin-faker:2.0.0-rc.11")
 	testImplementation(libs.ktor.serverTestHost)
 	testImplementation(libs.kotlin.testJunit)
 }

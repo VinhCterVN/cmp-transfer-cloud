@@ -19,21 +19,24 @@ import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateFolderDialog(
+fun FolderNameDialog(
+	visible: Boolean,
+	title: String = "New Folder...",
+	label: String = "Folder Name",
 	appState: AppState = koinInject<AppState>(),
-	viewModel: FolderViewModel = koinInject<FolderViewModel>()
+	viewModel: FolderViewModel = koinInject<FolderViewModel>(),
+	action: (() -> Unit)? = null
 ) {
 	val scope = rememberCoroutineScope()
 	val currentFolder by appState.currentFolder.collectAsState()
-	val dialogShow by appState.isCreatingFolder.collectAsState()
 	var folderName by remember { mutableStateOf("") }
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 
-	if (dialogShow)
+	if (visible)
 		Dialog(onDismissRequest = { appState.isCreatingFolder.value = false }) {
 			Card(
 				Modifier.fillMaxWidth(0.8f),
-				shape = RoundedCornerShape(12.dp),
+				shape = RoundedCornerShape(18.dp),
 				elevation = CardDefaults.cardElevation(8.dp),
 				colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
 			) {
@@ -42,13 +45,14 @@ fun CreateFolderDialog(
 					horizontalAlignment = Alignment.CenterHorizontally,
 					verticalArrangement = Arrangement.spacedBy(12.dp)
 				) {
-					Text("New Folder...", style = TitleLineLarge, modifier = Modifier.align(Alignment.Start))
+					Text(title, style = TitleLineLarge, modifier = Modifier.align(Alignment.Start))
 
 					OutlinedTextField(
 						value = folderName,
 						onValueChange = { folderName = it },
-						label = { Text("Folder Name") },
+						label = { Text(label) },
 						textStyle = MessageStyle,
+						shape = RoundedCornerShape(12.dp),
 						modifier = Modifier.fillMaxWidth()
 					)
 
@@ -63,14 +67,17 @@ fun CreateFolderDialog(
 							Text("Close", style = TitleLineLarge.copy(fontSize = 16.sp))
 						}
 						Button(onClick = {
-							(scope.launch {
-								val res = viewModel.createFolder(folderName, currentFolder)
-								scaffoldState.snackbarHostState.showSnackbar(
-									res,
-									withDismissAction = true,
-									duration = SnackbarDuration.Short
-								)
-							})
+							if (action != null) {
+								action()
+							} else
+								scope.launch {
+									val res = viewModel.createFolder(folderName, currentFolder)
+									scaffoldState.snackbarHostState.showSnackbar(
+										res,
+										withDismissAction = true,
+										duration = SnackbarDuration.Short
+									)
+								}
 						}) {
 							Text("Create", style = TitleLineLarge.copy(fontSize = 16.sp))
 						}

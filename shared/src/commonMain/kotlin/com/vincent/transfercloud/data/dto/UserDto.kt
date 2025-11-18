@@ -17,4 +17,5 @@ data class UserOutputDto(
 	val email: String,
 	val avatarUrl: String? = null,
 	val rootFolderId: String? = null,
+	val isValid: Boolean = true
 )

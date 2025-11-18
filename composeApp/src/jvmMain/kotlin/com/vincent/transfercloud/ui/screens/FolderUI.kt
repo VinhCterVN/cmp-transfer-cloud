@@ -1,21 +1,16 @@
 package com.vincent.transfercloud.ui.screens
 
-import androidx.compose.foundation.VerticalScrollbar
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.*
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.*
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.rememberScrollbarAdapter
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,29 +19,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.isBackPressed
+import androidx.compose.ui.input.pointer.isForwardPressed
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.vincent.transfercloud.ui.component.dialog.CreateFolderDialog
+import com.vincent.transfercloud.ui.component.dialog.FolderNameDialog
 import com.vincent.transfercloud.ui.component.fileView.FileChainView
-import com.vincent.transfercloud.ui.navigation.FolderDetailView
+import com.vincent.transfercloud.ui.component.fileView.FolderGridView
+import com.vincent.transfercloud.ui.component.fileView.FolderListView
 import com.vincent.transfercloud.ui.state.AppState
+import com.vincent.transfercloud.ui.state.FileViewIndex
 import com.vincent.transfercloud.ui.state.UIState
-import com.vincent.transfercloud.ui.theme.LabelLineSmall
+import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import io.github.alexzhirkevich.compottie.Compottie
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import io.github.alexzhirkevich.compottie.rememberLottiePainter
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import java.awt.datatransfer.DataFlavor
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -56,20 +57,23 @@ fun FolderView(
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
 	val navigator = LocalNavigator.currentOrThrow
-	val listState = rememberLazyGridState()
-	val scope = rememberCoroutineScope()
-	val coroutineScope = rememberCoroutineScope()
-	val composition by rememberLottieComposition {
-		LottieCompositionSpec.JsonString(
-			Res.readBytes("files/empty.json").decodeToString()
-		)
-	}
+	val isCreatingFolder by appState.isCreatingFolder.collectAsState()
+	val gridState = rememberLazyGridState()
+	val listState = rememberLazyListState()
 	var showTargetBorder by remember { mutableStateOf(false) }
-	var targetText by remember { mutableStateOf("Drop Here") }
 	val dragAndDropTarget = remember {
 		object : DragAndDropTarget {
 			override fun onStarted(event: DragAndDropEvent) {
 				showTargetBorder = true
+				val transferable = event.awtTransferable
+				if (transferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+					val text = transferable.getTransferData(DataFlavor.stringFlavor) as String
+					println("Dragging text: $text")
+				}
+				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
+					println("Dragging files: $files")
+				}
 			}
 
 			override fun onEnded(event: DragAndDropEvent) {
@@ -78,32 +82,48 @@ fun FolderView(
 
 			override fun onDrop(event: DragAndDropEvent): Boolean {
 				println("Action at the target: ${event.action}")
-				val result = (targetText == "Drop Here")
-				targetText = event.awtTransferable.let {
-					if (it.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-						it.getTransferData(DataFlavor.stringFlavor) as String
-					} else {
-						it.transferDataFlavors.first().humanPresentableName
-					}
+				val transferable = event.awtTransferable
+				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
+					viewModel.uploadFile(files.first() as File)
 				}
-				coroutineScope.launch {
-					delay(2000)
-					targetText = "Drop Here"
-				}
-				return result
+				return true
 			}
 		}
 	}
+	val composition by rememberLottieComposition {
+		LottieCompositionSpec.JsonString(
+			Res.readBytes("files/uploading.json").decodeToString()
+		)
+	}
+	val viewIndex by appState.currentViewIndex.collectAsState()
 	val uiState by viewModel.uiState.collectAsState()
-	val folderData by viewModel.folderData.collectAsState()
-
+	val blurRadius by animateDpAsState(
+		targetValue = if (showTargetBorder) 4.dp else 0.dp,
+		animationSpec = tween(300)
+	)
 	LaunchedEffect(Unit) {
 		appState.currentFolder.emit(id)
 		viewModel.getFolderData(id)
 	}
 
-
-	Box(Modifier.fillMaxSize()) {
+	Box(
+		Modifier.fillMaxSize()
+			.pointerInput(Unit) {
+				awaitPointerEventScope {
+					var lastItem: Screen? = null
+					while (true) {
+						val event = awaitPointerEvent()
+						if (event.buttons.isBackPressed && navigator.canPop) {
+							lastItem = navigator.lastItemOrNull
+							navigator.pop()
+						} else if (event.buttons.isForwardPressed) {
+							if (lastItem != null) navigator.push(lastItem)
+						}
+					}
+				}
+			}
+	) {
 		when (uiState) {
 			is UIState.Loading -> @Composable {
 				Box(
@@ -137,78 +157,44 @@ fun FolderView(
 			}
 
 			else -> @Composable {
+				FolderNameDialog(isCreatingFolder)
 				Column(
 					Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
 				) {
 					FileChainView()
-					LazyVerticalGrid(
-						state = listState,
-						columns = GridCells.Adaptive(minSize = 250.dp),
-						contentPadding = PaddingValues(8.dp),
-						modifier = Modifier.weight(1f).dragAndDropTarget(
-							shouldStartDragAndDrop = { event ->
-								println(event.action)
-								true
-							},
-							target = dragAndDropTarget
-						).then(
-							if (showTargetBorder) Modifier.border(
-								2.dp,
-								MaterialTheme.colorScheme.primaryContainer,
-								RoundedCornerShape(12.dp)
-							) else Modifier
-						)
-					) {
-						itemsIndexed(folderData?.subfolders ?: emptyList()) { index, folder ->
-							Card(
-								onClick = {
-									scope.launch { navigator.push(FolderDetailView(folder.id)) }
-								},
-								colors = CardDefaults.cardColors(
-									containerColor = MaterialTheme.colorScheme.surfaceVariant
-								),
-								elevation = CardDefaults.cardElevation(2.dp),
-								shape = RoundedCornerShape(12.dp),
-								modifier = Modifier.padding(8.dp).height(55.dp)
-							) {
-								Row(
-									Modifier.fillMaxSize().padding(horizontal = 12.dp),
-									verticalAlignment = Alignment.CenterVertically,
-									horizontalArrangement = Arrangement.spacedBy(12.dp)
-								) {
-									Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-									Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-										Text(
-											folder.name, style = TextStyle(
-												fontWeight = FontWeight.SemiBold,
-												fontSize = 16.sp
-											)
-										)
 
-										Text(
-											folder.createdAt,
-											style = LabelLineSmall.copy(fontWeight = FontWeight.Normal, fontSize = 12.sp)
-										)
-									}
-									Spacer(Modifier.weight(1f))
+					Box(Modifier.clip(RoundedCornerShape(12.dp)).blur(blurRadius, edgeTreatment = BlurredEdgeTreatment.Unbounded)) {
+						Column(
+							modifier = Modifier.fillMaxSize(),
+						) {
+							when (viewIndex) {
+								FileViewIndex.LIST -> {
+									FolderListView(listState)
+								}
 
-									Box(
-										modifier = Modifier
-											.clip(CircleShape)
-											.pointerHoverIcon(PointerIcon.Hand)
-											.clickable {}
-											.padding(4.dp)
-									) {
-										Icon(
-											Icons.Default.MoreVert,
-											null,
-											tint = MaterialTheme.colorScheme.onSurfaceVariant,
-											modifier = Modifier.size(18.dp)
-										)
-									}
+								FileViewIndex.GRID -> {
+									FolderGridView(gridState)
 								}
 							}
 						}
+						Box(
+							Modifier.fillMaxSize().zIndex(100f).dragAndDropTarget(
+								shouldStartDragAndDrop = { event ->
+									println(event.action)
+									true
+								},
+								target = dragAndDropTarget
+							).then(
+								if (showTargetBorder) Modifier.border(
+									2.dp,
+									Color.Blue.copy(0.75f),
+									RoundedCornerShape(12.dp)
+								).background(
+									MaterialTheme.colorScheme.primaryContainer.copy(0.75f),
+									RoundedCornerShape(12.dp)
+								) else Modifier
+							)
+						)
 					}
 				}
 
@@ -216,11 +202,66 @@ fun FolderView(
 					modifier = Modifier.align(Alignment.CenterEnd)
 						.fillMaxHeight()
 						.width(6.dp),
-					adapter = rememberScrollbarAdapter(listState),
+					adapter = when (viewIndex) {
+						FileViewIndex.LIST -> rememberScrollbarAdapter(listState)
+						FileViewIndex.GRID -> rememberScrollbarAdapter(gridState)
+					}
 				)
+
+				AnimatedVisibility(
+					visible = showTargetBorder,
+					enter = slideInVertically(
+						initialOffsetY = { it },
+						animationSpec = tween(300)
+					) + fadeIn(
+						animationSpec = tween(300),
+						initialAlpha = 0f
+					) + scaleIn(
+						animationSpec = tween(300),
+						initialScale = 0.8f
+					),
+					exit = slideOutVertically(
+						targetOffsetY = { it },
+						animationSpec = tween(300)
+					) + fadeOut(
+						animationSpec = tween(300),
+						targetAlpha = 0f
+					) + scaleOut(
+						animationSpec = tween(300),
+						targetScale = 0.8f
+					),
+					modifier = Modifier.align(Alignment.BottomCenter).zIndex(100f)
+				) {
+					Column(
+						Modifier
+							.width(300.dp)
+							.aspectRatio(1f),
+						horizontalAlignment = Alignment.CenterHorizontally
+					) {
+						Image(
+							painter = rememberLottiePainter(
+								composition = composition,
+								iterations = Compottie.IterateForever
+							),
+							contentDescription = null,
+						)
+
+						Box(
+							Modifier
+								.background(MaterialTheme.colorScheme.onPrimaryFixedVariant, RoundedCornerShape(12.dp))
+								.padding(16.dp),
+							contentAlignment = Alignment.Center
+						) {
+							Text(
+								"Drop Files Here to Upload",
+								style = TitleLineLarge.copy(
+									color = Color.White
+								)
+							)
+						}
+					}
+				}
 			}
 		}
 	}
-
-	CreateFolderDialog()
 }

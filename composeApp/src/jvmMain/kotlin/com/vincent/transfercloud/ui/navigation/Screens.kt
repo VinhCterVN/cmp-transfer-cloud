@@ -38,11 +38,3 @@ class FolderDetailView(val id: String) : Screen {
 	@Composable
 	override fun Content() = FolderView(id = id)
 }
-
-object HomeView : Screen {
-	override val key: ScreenKey = uniqueScreenKey
-	private fun readResolve(): Any = HomeView
-
-	@Composable
-	override fun Content() = TransferApp()
-}

@@ -18,6 +18,7 @@ fun main() = application {
 	val state = rememberWindowState(
 		width = 1200.dp,
 		height = 800.dp,
+	isMinimized = true
 	)
 	val scaffoldState = rememberBottomSheetScaffoldState(
 		bottomSheetState = rememberStandardBottomSheetState(

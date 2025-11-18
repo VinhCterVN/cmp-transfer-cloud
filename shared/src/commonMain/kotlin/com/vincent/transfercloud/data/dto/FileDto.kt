@@ -21,6 +21,7 @@ data class FileOutputDto(
 	val folderId: String,
 	val ownerId: String,
 	val fileSize: Long,
+	val breadcrumb: List<BreadcrumbItem> = emptyList(),
 	val mimeType: String,
 	val storagePath: String,
 	val location: FileLocation,

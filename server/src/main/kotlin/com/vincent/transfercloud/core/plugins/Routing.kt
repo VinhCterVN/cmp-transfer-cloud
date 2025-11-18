@@ -3,8 +3,10 @@
 package com.vincent.transfercloud.core.plugins
 
 import com.vincent.transfercloud.data.dto.*
+import com.vincent.transfercloud.data.helper.DatabaseSeeder
 import com.vincent.transfercloud.data.repository.AuthRepository
 import com.vincent.transfercloud.data.repository.FileRepository
+import com.vincent.transfercloud.data.repository.FolderRepository
 import com.vincent.transfercloud.data.repository.UserRepository
 import com.vincent.transfercloud.utils.json
 import io.ktor.http.*
@@ -61,7 +63,7 @@ fun Application.configureRouting() {
 		get("/api/folders/{folder_id}/{owner_id}") {
 			val id = call.parameters["folder_id"] ?: return@get call.respond("Missing or malformed id")
 			val ownerId = call.parameters["owner_id"] ?: return@get call.respond("Missing or malformed owner id")
-			val folder = FileRepository.getFolderById(id, ownerId)
+			val folder = FolderRepository.getFolderById(id, ownerId)
 			call.respond(
 				GetFolderContentsRequestDto(
 					folderId = id,
@@ -74,7 +76,7 @@ fun Application.configureRouting() {
 
 		post("/api/folders") {
 			val req = call.receive<CreateFolderRequestDto>()
-			val res = FileRepository.createFolder(req.ownerId, req.folderName, req.parentFolderId)
+			val res = FolderRepository.createFolder(req.ownerId, req.folderName, req.parentFolderId)
 			call.respond(
 				CreateFolderResponseDto(
 					folder = res,
@@ -82,6 +84,34 @@ fun Application.configureRouting() {
 					message = if (res != null) "Folder created" else "Failed to create folder"
 				)
 			)
+		}
+
+		delete("/api/folders/{folder_id}/{owner_id}") {
+			val id = call.parameters["folder_id"] ?: return@delete call.respond("Missing or malformed id")
+			val ownerId = call.parameters["owner_id"] ?: return@delete call.respond("Missing or malformed owner id")
+			val success = FolderRepository.deleteFolder(id, ownerId)
+			if (success) {
+				call.respondText("Folder deleted successfully", status = HttpStatusCode.OK)
+			} else {
+				call.respondText("Failed to delete folder", status = HttpStatusCode.InternalServerError)
+			}
+		}
+
+
+		delete("/api/files/{file_id}/{owner_id}") {
+			val id = call.parameters["file_id"] ?: return@delete call.respond("Missing or malformed id")
+			val ownerId = call.parameters["owner_id"] ?: return@delete call.respond("Missing or malformed owner id")
+			val success = FileRepository.deleteFile(id, ownerId)
+			if (success) {
+				call.respondText("File deleted successfully", status = HttpStatusCode.OK)
+			} else {
+				call.respondText("Failed to delete file", status = HttpStatusCode.InternalServerError)
+			}
+		}
+
+		get("/api/seed") {
+			DatabaseSeeder.seed(4)
+			call.respondText("Database seeded", contentType = ContentType.Text.Html)
 		}
 	}
 }

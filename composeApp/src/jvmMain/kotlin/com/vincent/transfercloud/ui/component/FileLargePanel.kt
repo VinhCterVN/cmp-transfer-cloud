@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.runtime.*
@@ -42,10 +39,8 @@ fun FileLargePanel(
 	var expanded by remember { mutableStateOf(false) }
 	val focusRequester = FocusRequester()
 	val items = listOf(
-		FloatingMenuItem(Icons.Default.Add, "New") {
-			appState.isCreatingFolder.value = true
-		},
-		FloatingMenuItem(Icons.Filled.People, "Reply all") {},
+		FloatingMenuItem(Icons.Filled.CreateNewFolder, "Create Folder") { appState.isCreatingFolder.value = true },
+		FloatingMenuItem(Icons.Default.UploadFile, "New") {},
 		FloatingMenuItem(Icons.Filled.SelectAll, "Select") {},
 		FloatingMenuItem(Icons.AutoMirrored.Filled.Label, "Label") {},
 	)

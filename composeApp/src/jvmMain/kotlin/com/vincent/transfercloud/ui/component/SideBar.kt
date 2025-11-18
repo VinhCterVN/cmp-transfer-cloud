@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.vincent.transfercloud.ui.state.AppState
-import com.vincent.transfercloud.ui.state.EmailIndex
 import com.vincent.transfercloud.ui.theme.LabelLineSmall
 import org.koin.compose.koinInject
 
@@ -28,26 +27,25 @@ import org.koin.compose.koinInject
 fun SideBar(
 	appState: AppState = koinInject<AppState>()
 ) {
-	val currentIndex = appState.currentIndex
 	var selectedIndex by remember { mutableStateOf(0) }
 	val sideBarItems = listOf(
 		SideBarOption(
 			"Home",
 			selectedIcon = Icons.Rounded.Home,
 			unselectedIcon = Icons.Outlined.Home,
-			onClick = { selectedIndex = 0; currentIndex.value = EmailIndex.INBOX }
+			onClick = { selectedIndex = 0 }
 		),
 		SideBarOption(
 			"My Drive",
 			selectedIcon = Icons.Rounded.FolderOpen,
 			unselectedIcon = Icons.Outlined.Folder,
-			onClick = { selectedIndex = 1; currentIndex.value = EmailIndex.SENT }
+			onClick = { selectedIndex = 1; }
 		),
 		SideBarOption(
 			"Shared with me",
 			selectedIcon = Icons.Rounded.Groups,
 			unselectedIcon = Icons.Outlined.Groups,
-			onClick = { selectedIndex = 2; currentIndex.value = EmailIndex.DRAFTS }
+			onClick = { selectedIndex = 2; }
 		)
 	)
 

@@ -45,9 +45,9 @@ fun AppGate(
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val startDestination = AuthDestination.LOGIN
 	var selectedDestination by rememberSaveable { mutableIntStateOf(startDestination.ordinal) }
-	var username: String by remember { mutableStateOf("") }
-	var email: String by remember { mutableStateOf("") }
-	var password: String by remember { mutableStateOf("") }
+	var username: String by remember { mutableStateOf("Vincent Tran") }
+	var email: String by remember { mutableStateOf("vincent@mail.com") }
+	var password: String by remember { mutableStateOf("abcbac") }
 
 	LaunchedEffect(currentUser) {
 		if (currentUser == null) scope.launch {
@@ -183,6 +183,8 @@ fun AppGate(
 									leadingIcon = { Icon(Icons.Default.Lock, null) },
 									maxLines = 1,
 									modifier = Modifier.fillMaxWidth(0.75f),
+									visualTransformation = PasswordVisualTransformation(),
+									keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
 								)
 							}
 						}

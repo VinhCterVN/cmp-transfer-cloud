@@ -22,7 +22,7 @@ object UserRepository {
 				it[avatarUrl] = user.avatarUrl
 				it[passwordHash] = hashPassword(user.password)
 			}.value
-			val rootFolderId = FileRepository.createRootFolder(id)
+			val rootFolderId = FolderRepository.createRootFolder(id)
 
 			UserOutputDto(
 				id = id.toString(),
@@ -65,6 +65,7 @@ object UserRepository {
 			fullName = userRow[Users.fullName],
 			email = userRow[Users.email],
 			avatarUrl = userRow[Users.avatarUrl],
+			isValid = userRow[Users.isValid],
 			rootFolderId = rootFolderId?.toString()
 		)
 	}

@@ -24,3 +24,6 @@ Content-Type: application/json
 ###
 GET http://localhost:8080/api/folders/af1f426c-36fc-4c3f-8b29-3c883b742682/0622a55d-d2ec-415a-a232-6579ad235d25
 ###
+
+GET http://localhost:8080/api/seed
+###

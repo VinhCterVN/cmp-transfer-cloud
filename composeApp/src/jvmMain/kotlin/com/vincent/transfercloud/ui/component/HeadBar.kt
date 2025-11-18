@@ -63,7 +63,8 @@ fun HeaderBar(
 			Text(
 				"Transfer Cloud",
 				style = HeadLineLarge.copy(color = MaterialTheme.colorScheme.onPrimaryContainer),
-				textAlign = TextAlign.Center
+				textAlign = TextAlign.Center,
+				maxLines = 1
 			)
 		}
 

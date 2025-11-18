@@ -1,7 +1,7 @@
 package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.ViewModel
-import com.vincent.transfercloud.SERVER_URL
+import com.vincent.transfercloud.core.constant.APP_URL
 import com.vincent.transfercloud.core.constant.client
 import com.vincent.transfercloud.core.constant.json
 import com.vincent.transfercloud.data.dto.LoginRequestDto
@@ -18,7 +18,7 @@ class AuthViewModel(
 	suspend fun login(email: String, password: String): String? {
 		try {
 			if (email.trim().isEmpty() || password.isEmpty()) return "Email and password cannot be empty"
-			val res = client.post("$SERVER_URL/auth/login") {
+			val res = client.post("$APP_URL/auth/login") {
 				contentType(ContentType.Application.Json)
 				setBody(LoginRequestDto(email, password))
 			}.bodyAsText()
@@ -36,7 +36,7 @@ class AuthViewModel(
 	suspend fun register(fullName: String, email: String, password: String): String? {
 		try {
 			if (fullName.trim().isEmpty() || email.trim().isEmpty() || password.isEmpty()) return "All fields are required"
-			val res = client.post("$SERVER_URL/auth/register") {
+			val res = client.post("$APP_URL/auth/register") {
 				contentType(ContentType.Application.Json)
 				setBody(UserInputDto(fullName, email, password))
 			}.bodyAsText()
