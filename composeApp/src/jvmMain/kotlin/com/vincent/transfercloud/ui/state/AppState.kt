@@ -3,6 +3,8 @@ package com.vincent.transfercloud.ui.state
 import com.vincent.transfercloud.core.model.NetworkConfig
 import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.UserOutputDto
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class AppState {
@@ -13,5 +15,8 @@ class AppState {
 	val breadcrumb = MutableStateFlow<List<BreadcrumbItem>>(emptyList())
 	val currentFolder = MutableStateFlow("")
 	val currentViewIndex = MutableStateFlow(FileViewIndex.GRID)
+	val clientSocket = MutableStateFlow<Socket?>(null)
+	val clientSocketWriteChannel = MutableStateFlow<ByteWriteChannel?>(null)
+	val clientSocketReadChannel = MutableStateFlow<ByteReadChannel?>(null)
 }
 

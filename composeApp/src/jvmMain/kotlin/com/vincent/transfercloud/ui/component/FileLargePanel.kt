@@ -19,7 +19,6 @@ import androidx.compose.ui.semantics.*
 import cafe.adriel.voyager.navigator.Navigator
 import com.vincent.transfercloud.ui.navigation.HomeScreen
 import com.vincent.transfercloud.ui.state.AppState
-import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import org.koin.compose.koinInject
@@ -29,7 +28,6 @@ import transfercloud.composeapp.generated.resources.Res
 @Composable
 fun FileLargePanel(
 	appState: AppState = koinInject<AppState>(),
-	viewModel: AppViewModel = koinInject<AppViewModel>()
 ) {
 	val composition by rememberLottieComposition {
 		LottieCompositionSpec.JsonString(

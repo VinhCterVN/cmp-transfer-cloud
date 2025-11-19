@@ -7,7 +7,7 @@ import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import javax.xml.crypto.Data
 
-fun Application.configDatabase() {
+fun configDatabase() {
 	Database.connect(
 		url = "jdbc:postgresql://ep-quiet-term-a1luua4r-pooler.ap-southeast-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_B4Ar0OgtMIJR&sslmode=require&channelBinding=require",
 		driver = "org.postgresql.Driver",

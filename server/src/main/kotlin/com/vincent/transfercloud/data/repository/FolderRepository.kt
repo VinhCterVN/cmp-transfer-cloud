@@ -58,14 +58,6 @@ object FolderRepository {
 		breadcrumb
 	}
 
-	fun getFileBreadcrumb(fileId: UUID, ownerId: UUID): List<BreadcrumbItem> = transaction {
-		val file = Files.selectAll()
-			.where { (Files.id eq fileId) and (Files.ownerId eq ownerId) }
-			.singleOrNull() ?: return@transaction emptyList()
-		val folderId = file[Files.folderId].value
-		getFolderBreadcrumb(folderId, ownerId)
-	}
-
 	fun createRootFolder(userId: UUID, folderName: String = "My Drive"): UUID {
 		return transaction {
 			Folders.insertAndGetId {
@@ -81,9 +73,9 @@ object FolderRepository {
 			val ownerUuid = UUID.fromString(userId)
 			val parentUuid = UUID.fromString(parentFolderId)
 			val folderId = Folders.insertAndGetId {
-				it[name] = folderName
-				it[ownerId] = ownerUuid
-				it[parentId] = parentUuid
+				it[Folders.name] = folderName
+				it[Folders.ownerId] = ownerUuid
+				it[Folders.parentId] = parentUuid
 			}.value
 
 			Folders.selectAll()

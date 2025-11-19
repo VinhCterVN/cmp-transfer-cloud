@@ -31,7 +31,7 @@ object Files : UUIDTable("files") {
 	val fileSize = long("file_size")
 	val mimeType = varchar("mime_type", 100)
 	val storagePath = varchar("storage_path", 500)
-	val location = enumerationByName("location", 20, FileLocation::class).default(FileLocation.CLOUD)
+	val location = enumerationByName("location", 20, FileLocation::class).default(FileLocation.LOCAL)
 	val createdAt = timestamp("created_at").defaultExpression(CurrentTimestamp)
 	val updatedAt = timestamp("updated_at").defaultExpression(CurrentTimestamp)
 }

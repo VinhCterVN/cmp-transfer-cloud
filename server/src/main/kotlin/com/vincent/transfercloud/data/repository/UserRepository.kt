@@ -9,12 +9,13 @@ import com.vincent.transfercloud.data.schema.Users
 import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.lowerCase
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 
 object UserRepository {
-	fun createUser(user: UserInputDto): UserOutputDto = try {
+	fun createUser(user: UserInputDto): UserOutputDto? = try {
 		transaction {
 			val id = Users.insertAndGetId {
 				it[fullName] = user.fullName
@@ -38,8 +39,7 @@ object UserRepository {
 		if (msg.contains("unique", ignoreCase = true)) {
 			throw EmailAlreadyExistsException()
 		}
-
-		throw e
+		null
 	}
 
 	fun getAll(): List<UserOutputDto> = transaction {
@@ -51,6 +51,18 @@ object UserRepository {
 				avatarUrl = it[Users.avatarUrl],
 			)
 		}
+	}
+
+	fun findByEmailContaining(query: String): List<UserOutputDto> = transaction {
+		Users.selectAll().where { Users.email.lowerCase() like "%${query.lowercase()}%" }
+			.map {
+				UserOutputDto(
+					id = it[Users.id].value.toString(),
+					fullName = it[Users.fullName],
+					email = it[Users.email],
+					avatarUrl = it[Users.avatarUrl],
+				)
+			}
 	}
 
 	fun getByEmail(email: String): UserOutputDto? = transaction {

@@ -3,13 +3,13 @@ package com.vincent.transfercloud.data.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class LoginRequestDto(
+data class LoginRequest(
 	val email: String,
 	val password: String
 )
 
 @Serializable
-data class RegisterRequestDto(
+data class RegisterRequest(
 	val fullName: String,
 	val email: String,
 	val password: String,
@@ -17,8 +17,18 @@ data class RegisterRequestDto(
 )
 
 @Serializable
-data class CreateFolderRequestDto(
+data class CreateFolderRequest(
 	val ownerId: String,
 	val folderName: String,
 	val parentFolderId: String
+)
+
+@Serializable
+data class CreateFileRequest(
+	val ownerId: String,
+	val fileName: String,
+	val parentFolderId: String,
+	val fileSize: Long,
+	val mimeType: String,
+	val data: ByteArray
 )

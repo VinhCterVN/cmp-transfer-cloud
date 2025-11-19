@@ -130,7 +130,9 @@ fun ColumnScope.FolderGridView(
 										expanded = openMenuFolderId == folder.id,
 										onDismissRequest = { openMenuFolderId = null },
 										onRename = { openMenuFolderId = null },
-										onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null }, onDelete = {
+										onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+										onDownload = {},
+										onDelete = {
 											scope.launch {
 												openMenuFolderId = null
 												val res = bottomSheetState.snackbarHostState.showSnackbar(

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -64,7 +65,7 @@ fun SideBar(
 				label = {
 					Text(
 						item.name, style = LabelLineSmall.copy(
-							fontSize = 14.sp
+							fontSize = 15.sp
 						)
 					)
 				},

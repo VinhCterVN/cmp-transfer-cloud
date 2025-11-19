@@ -23,11 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.isForwardPressed
-import androidx.compose.ui.input.pointer.isSecondaryPressed
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -39,6 +35,7 @@ import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.component.dialog.FileOptionMenu
+import com.vincent.transfercloud.ui.component.dialog.formatFileSize
 import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.TitleLineBig
@@ -209,7 +206,7 @@ fun ColumnScope.FolderListView(
 									Icons.Default.Folder,
 									null,
 									tint = MaterialTheme.colorScheme.primary,
-									modifier = Modifier.size(20.dp)
+									modifier = Modifier.size(24.dp)
 								)
 								Text(
 									folder.name,
@@ -275,7 +272,9 @@ fun ColumnScope.FolderListView(
 									expanded = openMenuFolderId == folder.id,
 									onDismissRequest = { openMenuFolderId = null },
 									onRename = { openMenuFolderId = null },
-									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null }, onDelete = {
+									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+									onDownload = {},
+									onDelete = {
 										scope.launch {
 											openMenuFolderId = null
 											val res = bottomSheetState.snackbarHostState.showSnackbar(
@@ -393,7 +392,7 @@ fun ColumnScope.FolderListView(
 									Icons.AutoMirrored.Filled.InsertDriveFile,
 									null,
 									tint = MaterialTheme.colorScheme.onSurfaceVariant,
-									modifier = Modifier.size(20.dp)
+									modifier = Modifier.size(24.dp)
 								)
 								Text(
 									file.name,
@@ -430,15 +429,16 @@ fun ColumnScope.FolderListView(
 							)
 
 							Text(
-								"${file.fileSize / 1024} KB",
+								formatFileSize(file.fileSize),
 								style = tableRowStyle,
 								modifier = Modifier.weight(0.25f)
 							)
 
 							Text(
-								file.name,
+								file.mimeType,
 								style = tableRowStyle,
-								modifier = Modifier.weight(0.3f)
+								modifier = Modifier.weight(0.3f),
+								maxLines = 1
 							)
 
 							Box {
@@ -460,7 +460,9 @@ fun ColumnScope.FolderListView(
 									expanded = openMenuFolderId == file.id,
 									onDismissRequest = { openMenuFolderId = null },
 									onRename = { openMenuFolderId = null },
-									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null }, onDelete = {
+									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+									onDownload = {},
+									onDelete = {
 										scope.launch {
 											openMenuFolderId = null
 											val res = bottomSheetState.snackbarHostState.showSnackbar(

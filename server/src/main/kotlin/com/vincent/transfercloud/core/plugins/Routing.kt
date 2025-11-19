@@ -32,7 +32,7 @@ fun Application.configureRouting() {
 		}
 
 		post("/api/auth/login") {
-			val req = call.receive<LoginRequestDto>()
+			val req = call.receive<LoginRequest>()
 			val res = AuthRepository.login(req.email, req.password)
 			call.respondText(json.encodeToString(res), ContentType.Text.Plain)
 		}
@@ -75,7 +75,7 @@ fun Application.configureRouting() {
 		}
 
 		post("/api/folders") {
-			val req = call.receive<CreateFolderRequestDto>()
+			val req = call.receive<CreateFolderRequest>()
 			val res = FolderRepository.createFolder(req.ownerId, req.folderName, req.parentFolderId)
 			call.respond(
 				CreateFolderResponseDto(
@@ -102,7 +102,7 @@ fun Application.configureRouting() {
 			val id = call.parameters["file_id"] ?: return@delete call.respond("Missing or malformed id")
 			val ownerId = call.parameters["owner_id"] ?: return@delete call.respond("Missing or malformed owner id")
 			val success = FileRepository.deleteFile(id, ownerId)
-			if (success) {
+			if (success.isNotEmpty()) {
 				call.respondText("File deleted successfully", status = HttpStatusCode.OK)
 			} else {
 				call.respondText("Failed to delete file", status = HttpStatusCode.InternalServerError)
@@ -110,7 +110,7 @@ fun Application.configureRouting() {
 		}
 
 		get("/api/seed") {
-			DatabaseSeeder.seed(4)
+			DatabaseSeeder.seed(0, 100, 200)
 			call.respondText("Database seeded", contentType = ContentType.Text.Html)
 		}
 	}

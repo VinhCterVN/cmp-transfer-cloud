@@ -15,13 +15,15 @@ import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.AppTheme
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
+import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSplitPaneApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun App(
-	appState: AppState = koinInject<AppState>()
+	appState: AppState = koinInject<AppState>(),
+	viewModel: AppViewModel = koinInject<AppViewModel>()
 ) {
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val theme by appState.darkTheme.collectAsState()

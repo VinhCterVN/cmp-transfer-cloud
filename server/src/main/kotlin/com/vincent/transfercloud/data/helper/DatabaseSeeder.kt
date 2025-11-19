@@ -27,17 +27,17 @@ object DatabaseSeeder {
 
 	private fun seedUsers(count: Int): List<String> {
 		val userIds = mutableListOf<String>()
-		UserRepository.createUser(UserInputDto(
-			fullName = "Vincent Tran",
-			email = "vincent@mail.com",
-			password = "abcbac"
-		))
+//		UserRepository.createUser(UserInputDto(
+//			fullName = "Vincent Tran",
+//			email = "vincent@mail.com",
+//			password = "abcbac"
+//		))
 		repeat(count) {
 			val userId = UserRepository.createUser(UserInputDto(
 				fullName = faker.name.name(),
 				email = faker.internet.email(),
 				password = faker.string.bothify("??##??##")
-			)).id
+			))!!.id
 			userIds.add(userId)
 		}
 		return userIds

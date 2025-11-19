@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ fun FileOptionMenu(
 	onRename: () -> Unit,
 	onShare: () -> Unit,
 	onMove: () -> Unit,
+	onDownload: () -> Unit,
 	onDelete: () -> Unit
 ) {
 	DropdownMenu(
@@ -46,6 +48,13 @@ fun FileOptionMenu(
 			onClick = onMove,
 			leadingIcon = {
 				Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
+			}
+		)
+		DropdownMenuItem(
+			text = { Text("Download") },
+			onClick = onDownload,
+			leadingIcon = {
+				Icon(Icons.Rounded.Download, contentDescription = null)
 			}
 		)
 		HorizontalDivider()

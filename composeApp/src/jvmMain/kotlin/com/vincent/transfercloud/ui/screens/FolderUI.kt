@@ -31,6 +31,7 @@ import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import com.vincent.transfercloud.ui.component.dialog.FileUploadDialog
 import com.vincent.transfercloud.ui.component.dialog.FolderNameDialog
 import com.vincent.transfercloud.ui.component.fileView.FileChainView
 import com.vincent.transfercloud.ui.component.fileView.FolderGridView
@@ -61,6 +62,7 @@ fun FolderView(
 	val gridState = rememberLazyGridState()
 	val listState = rememberLazyListState()
 	var showTargetBorder by remember { mutableStateOf(false) }
+	var uploadingFile by remember { mutableStateOf<File?>(null) }
 	val dragAndDropTarget = remember {
 		object : DragAndDropTarget {
 			override fun onStarted(event: DragAndDropEvent) {
@@ -85,7 +87,7 @@ fun FolderView(
 				val transferable = event.awtTransferable
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
-					viewModel.uploadFile(files.first() as File)
+					uploadingFile = files.first() as File
 				}
 				return true
 			}
@@ -158,6 +160,11 @@ fun FolderView(
 
 			else -> @Composable {
 				FolderNameDialog(isCreatingFolder)
+				FileUploadDialog(
+					uploadFile = uploadingFile,
+					onCancel = { uploadingFile = null },
+					action = { viewModel.uploadFile(uploadingFile); uploadingFile = null }
+				)
 				Column(
 					Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
 				) {

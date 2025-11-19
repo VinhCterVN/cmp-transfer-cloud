@@ -22,3 +22,10 @@ data class CreateFolderResponseDto(
 	val status: ResponseStatus,
 	val message: String
 )
+
+@Serializable
+data class CreateFileResponseDto(
+	val file: FileOutputDto?,
+	val status: ResponseStatus,
+	val message: String
+)

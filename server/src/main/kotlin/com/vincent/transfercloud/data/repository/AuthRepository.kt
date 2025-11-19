@@ -21,7 +21,7 @@ object AuthRepository {
 		UserRepository.getByEmail(email)
 	}
 
-	fun register(inputDto: UserInputDto): UserOutputDto = transaction {
+	fun register(inputDto: UserInputDto): UserOutputDto? = transaction {
 		UserRepository.createUser(inputDto)
 	}
 }
