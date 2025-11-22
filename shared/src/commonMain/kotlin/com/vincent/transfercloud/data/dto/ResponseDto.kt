@@ -29,3 +29,11 @@ data class CreateFileResponseDto(
 	val status: ResponseStatus,
 	val message: String
 )
+
+@Serializable
+data class DownloadFileResource(
+	val fileName: String,
+	val ownerId: String,
+	val mimeType: String,
+	val data: ByteArray
+)

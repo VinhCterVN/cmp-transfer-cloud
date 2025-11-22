@@ -40,7 +40,11 @@ kotlin {
 			implementation(libs.ktor.client.contentNegotiation)
 			implementation(libs.ktor.client.logging)
 			implementation(libs.ktor.serialization.kotlinx.json)
-			implementation("com.cloudinary:kotlin-url-gen:1.10.0")
+
+			implementation(libs.filekit.core)
+			implementation(libs.filekit.dialogs)
+			implementation(libs.filekit.dialogs.compose)
+
 			implementation(projects.shared)
 		}
 		commonTest.dependencies {

@@ -21,8 +21,8 @@ open class BaseSocketViewModel(
 	protected inline fun <reified T : @Serializable Any> sendRequest(
 		type: SocketRequestType,
 		payload: T,
-		crossinline onSuccess: (SocketResponse) -> Unit,
-		crossinline onError: (String) -> Unit
+		crossinline onSuccess: suspend (SocketResponse) -> Unit,
+		crossinline onError: suspend (String) -> Unit
 	) = viewModelScope.launch {
 		try {
 			val jsonPayload = json.encodeToString(payload)

@@ -8,3 +8,13 @@ import androidx.compose.runtime.compositionLocalOf
 val LocalBottomSheetScaffoldState = compositionLocalOf<BottomSheetScaffoldState> {
 	error("No BottomSheet state provided")
 }
+
+enum class FileViewIndex {
+	LIST, GRID
+}
+
+sealed class UIState {
+	object Loading : UIState()
+	object Ready : UIState()
+	data class Error(val message: String) : UIState()
+}

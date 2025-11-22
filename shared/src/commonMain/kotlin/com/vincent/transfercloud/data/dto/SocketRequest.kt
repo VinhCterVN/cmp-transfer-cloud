@@ -44,7 +44,14 @@ data class SearchRequest(
 )
 
 @Serializable
+data class DownloadRequest(
+	val id: String,
+	val ownerId: String,
+	val resource: String,
+)
+
+@Serializable
 enum class SocketRequestType {
-	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH
+	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH, DOWNLOAD
 }
 

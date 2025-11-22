@@ -1,6 +1,7 @@
 package com.vincent.transfercloud.ui.component.fileView
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
@@ -14,19 +15,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
+import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.component.button.ExpandButton
 import com.vincent.transfercloud.ui.component.dialog.FileOptionMenu
 import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
-import com.vincent.transfercloud.ui.theme.LabelLineSmall
+import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import kotlinx.coroutines.launch
@@ -48,6 +53,7 @@ fun ColumnScope.FolderGridView(
 	val foldersExpanded = remember { mutableStateOf(true) }
 	val filesExpanded = remember { mutableStateOf(true) }
 	var openMenuFolderId by remember { mutableStateOf<String?>(null) }
+
 
 	if (folderData?.subfolders.isNullOrEmpty() && folderData?.files.isNullOrEmpty()) {
 		Column(
@@ -131,7 +137,17 @@ fun ColumnScope.FolderGridView(
 										onDismissRequest = { openMenuFolderId = null },
 										onRename = { openMenuFolderId = null },
 										onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
-										onDownload = {},
+										onDownload = {
+											viewModel.downloadFolder(folder)
+											openMenuFolderId = null
+											scope.launch {
+												bottomSheetState.snackbarHostState.showSnackbar(
+													"Downloading ${folder.name}...",
+													actionLabel = "OK",
+													duration = SnackbarDuration.Short
+												)
+											}
+										},
 										onDelete = {
 											scope.launch {
 												openMenuFolderId = null
@@ -166,13 +182,99 @@ fun ColumnScope.FolderGridView(
 							shape = RoundedCornerShape(12.dp),
 							modifier = Modifier.padding(8.dp).aspectRatio(1f)
 						) {
-							// File content here
-							Text(file.name)
+							Column(
+								Modifier.fillMaxSize().padding(8.dp)
+							) {
+								Row(
+									modifier = Modifier.padding(4.dp).fillMaxWidth(),
+									verticalAlignment = Alignment.CenterVertically,
+									horizontalArrangement = Arrangement.spacedBy(12.dp)
+								) {
+									Icon(
+										painterResource(getFileIcon(file.name)), null, tint = Color.Unspecified
+									)
+									Text(
+										file.name,
+										style = TextStyle(
+											fontWeight = FontWeight.SemiBold,
+											fontSize = 16.sp
+										),
+										maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f)
+									)
+									Box {
+										Box(
+											modifier = Modifier
+												.clip(CircleShape)
+												.pointerHoverIcon(PointerIcon.Hand)
+												.clickable(
+													onClick = { openMenuFolderId = file.id },
+												)
+												.padding(4.dp)
+										) {
+											Icon(
+												Icons.Default.MoreVert,
+												null,
+												tint = MaterialTheme.colorScheme.onSurfaceVariant,
+												modifier = Modifier.size(18.dp)
+											)
+										}
+
+										FileOptionMenu(
+											expanded = openMenuFolderId == file.id,
+											onDismissRequest = { openMenuFolderId = null },
+											onRename = { openMenuFolderId = null },
+											onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+											onDownload = {
+												viewModel.downloadFile(file)
+												openMenuFolderId = null
+												scope.launch {
+													bottomSheetState.snackbarHostState.showSnackbar(
+														"Downloading ${file.name}...",
+														actionLabel = "OK",
+														duration = SnackbarDuration.Short
+													)
+												}
+											},
+											onDelete = {
+												scope.launch {
+													openMenuFolderId = null
+													val res = bottomSheetState.snackbarHostState.showSnackbar(
+														"Folder ${file.name} has been deleted.",
+														actionLabel = "Undo",
+														duration = SnackbarDuration.Short,
+													)
+													if (res == SnackbarResult.Dismissed)
+														viewModel.deleteFolder(file.id, file.ownerId)
+												}
+											}
+										)
+									}
+								}
+
+								Column(
+									Modifier.weight(1f).padding(vertical = 8.dp)
+								) {
+									Box(
+										Modifier.fillMaxSize()
+											.background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(4.dp))
+									) {}
+								}
+								Row(
+									modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+									verticalAlignment = Alignment.CenterVertically
+								) {
+									AsyncImage(
+										model = "https://i.pravatar.cc/150?u=User$index",
+										contentDescription = null,
+										contentScale = ContentScale.Crop,
+										modifier = Modifier.size(24.dp).clip(CircleShape)
+									)
+								}
+							}
 						}
 					}
 				}
 			}
 		}
 	}
-
 }

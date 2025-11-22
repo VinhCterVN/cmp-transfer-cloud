@@ -5,6 +5,10 @@ import com.vincent.transfercloud.core.constant.json
 import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.absolutePath
+import io.github.vinceglb.filekit.dialogs.openFileSaver
+import io.github.vinceglb.filekit.write
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -154,6 +158,26 @@ class FolderViewModel(
 				println("Error uploading file: $msg")
 			}
 		)
+	}
+
+	fun downloadFile(file: FileOutputDto) = viewModelScope.launch {
+		sendRequest(
+			type = SocketRequestType.DOWNLOAD,
+			payload = DownloadRequest(resource = "file", id = file.id, ownerId = file.ownerId),
+			onSuccess = { res ->
+				val data = json.decodeFromString<DownloadFileResource>(res.data!!)
+				val fileSaver = FileKit.openFileSaver(suggestedName = file.name, extension = file.name.substringAfterLast('.', ""))
+				fileSaver?.write(data.data)
+				println("File downloaded successfully: ${fileSaver?.absolutePath()}")
+			},
+			onError = { msg ->
+				println("Error downloading file: $msg")
+			}
+		)
+	}
+
+	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch {
+//		TODO: Implement folder download
 	}
 }
 

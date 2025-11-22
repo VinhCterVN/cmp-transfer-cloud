@@ -62,6 +62,7 @@ class ClientHandler(
 			SocketRequestType.DELETE -> handleDelete(req.payload)
 			SocketRequestType.UPDATE -> handleUpdate(req.payload)
 			SocketRequestType.SEARCH -> handleSearch(req.payload)
+			SocketRequestType.DOWNLOAD -> handleDownload(req.payload)
 		}
 	}
 
@@ -303,7 +304,12 @@ class ClientHandler(
 				"file" -> {
 					val fileReq = json.decodeFromString<CreateFileRequest>(req.data)
 					val encPath =
-						FileEncryptor.saveEncryptedFile(fileReq.data, fileReq.fileName, fileReq.ownerId, KeyManager.getFixedSecretKey())
+						FileEncryptor.saveEncryptedFile(
+							fileReq.data,
+							fileReq.fileName,
+							fileReq.ownerId,
+							KeyManager.getFixedSecretKeyFromEnv()
+						)
 					val file = FileRepository.createFile(
 						fileName = fileReq.fileName,
 						parentFolderId = fileReq.parentFolderId,
@@ -407,6 +413,69 @@ class ClientHandler(
 				message = "Update not implemented yet"
 			)
 		)
+	}
+
+	private fun handleDownload(payload: String) {
+		if (userId == null) {
+			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			return
+		}
+		try {
+			val req = json.decodeFromString<DownloadRequest>(payload)
+			println("Download request: $req")
+			val ownerId = req.ownerId
+			if (ownerId != userId) {
+				send(
+					SocketResponse(
+						status = ResponseStatus.ERROR,
+						message = "Unauthorized access"
+					)
+				)
+				return
+			}
+
+			when (req.resource) {
+				"file" -> {
+					val fileRecord = FileRepository.getFileById(req.id, req.ownerId)
+					assert(fileRecord != null)
+					val bytes = FileDecryptor.loadAndDecryptFile(fileRecord!!.storagePath, KeyManager.getFixedSecretKeyFromEnv())
+					if (bytes.isEmpty()) {
+						send(
+							SocketResponse(
+								status = ResponseStatus.ERROR,
+								message = "File not found or empty"
+							)
+						)
+						return
+					}
+					val resource = DownloadFileResource(fileRecord.name, fileRecord.ownerId, fileRecord.mimeType, bytes)
+					send(
+						SocketResponse(
+							status = ResponseStatus.SUCCESS,
+							message = "File download ready",
+							data = json.encodeToString(resource)
+						)
+					)
+				}
+
+				else -> {
+					send(
+						SocketResponse(
+							status = ResponseStatus.ERROR,
+							message = "Unknown resource: ${req.resource}"
+						)
+					)
+				}
+			}
+		} catch (e: Exception) {
+			send(
+				SocketResponse(
+					status = ResponseStatus.ERROR,
+					message = "Download failed: ${e.message}"
+				)
+			)
+		}
+
 	}
 
 	fun send(response: SocketResponse) = scope.launch {

@@ -14,12 +14,11 @@ object FileDecryptor {
 	/**
 	 * Đọc file từ ổ đĩa, giải mã và trả về ByteArray gốc
 	 */
-	fun loadAndDecryptFile(fileName: String, ownerId: String, secretKey: SecretKey): ByteArray {
+	fun loadAndDecryptFile(storagePath: String, secretKey: SecretKey): ByteArray {
 		val storageDir = File(System.getProperty("user.dir"), "storage").apply { if (!exists()) mkdirs() }
-		val ownerFile = File(storageDir, ownerId).apply { if (!exists()) mkdirs() }
-		val encryptedFile = File(ownerFile, fileName)
+		val encryptedFile = File(storageDir, storagePath)
 		if (!encryptedFile.exists()) {
-			throw FileNotFoundException("Không tìm thấy file: $fileName")
+			throw FileNotFoundException("Không tìm thấy file: ${encryptedFile.absolutePath}")
 		}
 		val fileBytes = FileInputStream(encryptedFile).use { it.readBytes() }
 		if (fileBytes.size < IV_SIZE) {

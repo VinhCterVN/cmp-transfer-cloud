@@ -17,10 +17,9 @@ ktor = "3.2.3"
 exposed = "0.61.0"
 logback = "1.5.13"
 slf4j = "2.0.17"
-sqldelight = "2.1.0"
 faker = "2.0.0-rc.11"
 h2 = "2.3.232"
-identityJvm = "202411.1"
+filekit = "0.12.0"
 
 
 [libraries]
@@ -77,6 +76,12 @@ ktor-exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref
 ktor-h2Database = { module = "com.h2database:h2", version.ref = "h2" }
 postgresql = { module = "org.postgresql:postgresql", version = "42.7.3" }
 mindrot-jbcrypt = { module = "org.mindrot:jbcrypt", version = "0.4" }
+
+#FileKit
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
+filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }
+filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
+
 
 [plugins]
 composeHotReload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }

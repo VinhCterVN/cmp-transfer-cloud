@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -23,12 +22,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -38,6 +40,7 @@ import com.vincent.transfercloud.ui.component.dialog.FileOptionMenu
 import com.vincent.transfercloud.ui.component.dialog.formatFileSize
 import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
+import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.formatIsoToMonthDay
@@ -60,15 +63,14 @@ fun ColumnScope.FolderListView(
 	val foldersExpanded = remember { mutableStateOf(true) }
 	val filesExpanded = remember { mutableStateOf(true) }
 	var openMenuFolderId by remember { mutableStateOf<String?>(null) }
-	var expanded by remember { mutableStateOf(false) }
-	var menuPosition by remember { mutableStateOf(Offset.Zero) }
+	var selectedIds by remember { mutableStateOf(setOf<String>()) }
 	val tableHeadStyle = TextStyle(
 		fontWeight = FontWeight.SemiBold,
 		fontSize = 14.sp,
 		color = MaterialTheme.colorScheme.onSurfaceVariant
 	)
 	val tableRowStyle = TextStyle(
-		fontSize = 13.sp,
+		fontSize = 14.sp,
 		color = MaterialTheme.colorScheme.onSurfaceVariant
 	)
 	val tableHeads = listOf(
@@ -86,7 +88,41 @@ fun ColumnScope.FolderListView(
 		TableHead("Type", 0.3f)
 	)
 
-
+	fun toggleSelection(id: String, isCtrlPressed: Boolean) {
+		selectedIds = if (isCtrlPressed) {
+			if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
+		} else {
+			if (selectedIds.contains(id)) emptySet() else setOf(id)
+		}
+	}
+	// Top selection bar (shows when any selection exists)
+	if (selectedIds.isNotEmpty()) {
+		Surface(
+			tonalElevation = 2.dp,
+			shadowElevation = 2.dp,
+			modifier = Modifier
+				.fillMaxWidth()
+				.height(56.dp)
+		) {
+			Row(
+				modifier = Modifier
+					.fillMaxSize()
+					.padding(horizontal = 16.dp),
+				verticalAlignment = Alignment.CenterVertically,
+				horizontalArrangement = Arrangement.SpaceBetween
+			) {
+				Text("${selectedIds.size} selected", style = MaterialTheme.typography.titleMedium)
+				Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+					TextButton(onClick = { /* TODO: bulk actions like download/share */ }) {
+						Text("Actions")
+					}
+					TextButton(onClick = { selectedIds = emptySet() }) {
+						Text("Clear")
+					}
+				}
+			}
+		}
+	}
 	if (folderData?.subfolders.isNullOrEmpty() && folderData?.files.isNullOrEmpty()) {
 		Column(
 			modifier = Modifier.fillMaxHeight().align(Alignment.CenterHorizontally),
@@ -156,13 +192,12 @@ fun ColumnScope.FolderListView(
 					itemsIndexed(folderData?.subfolders ?: emptyList()) { index, folder ->
 						val isLast = index == (folderData?.subfolders?.lastIndex ?: -1)
 						val color = MaterialTheme.colorScheme.outlineVariant
+						val isSelected = selectedIds.contains(folder.id)
+
 						Row(
 							modifier = Modifier
 								.fillMaxWidth()
 								.clip(RoundedCornerShape(8.dp))
-								.clickable {
-									scope.launch { navigator.push(FolderDetailView(folder.id)) }
-								}
 								.background(
 									if (index % 2 == 0) Color.Transparent
 									else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
@@ -178,21 +213,17 @@ fun ColumnScope.FolderListView(
 										)
 									}
 								}
-								.pointerInput(Unit) {
-									awaitPointerEventScope {
-										while (true) {
-											val event = awaitPointerEvent()
-											if (event.buttons.isSecondaryPressed) {
-												val position = event.changes.first().position
-												menuPosition = position
-												expanded = true
-											}
-											if (event.buttons.isForwardPressed) {
-												println("isForwardPressed")
-											}
-										}
+								.onKeyEvent { keyEvent ->
+									if (keyEvent.key == Key.CtrlLeft || keyEvent.key == Key.CtrlRight) {
+										true
+									} else {
+										false
 									}
 								}
+								.clickable(onClick = {
+									// TODO: Detect Ctrl+Click - for now using simple click
+									scope.launch { navigator.push(FolderDetailView(folder.id)) }
+								})
 								.padding(horizontal = 16.dp, vertical = 8.dp),
 							verticalAlignment = Alignment.CenterVertically
 						) {
@@ -289,24 +320,8 @@ fun ColumnScope.FolderListView(
 								)
 							}
 						}
-						DropdownMenu(
-							expanded = expanded,
-							onDismissRequest = { expanded = false },
-							offset = DpOffset(menuPosition.x.dp, menuPosition.y.dp)
-						) {
-							DropdownMenuItem(
-								text = { Text("Rename") },
-								onClick = { /* ... */ }
-							)
-							DropdownMenuItem(
-								text = { Text("Delete") },
-								onClick = { /* ... */ }
-							)
-						}
 					}
 				}
-			}
-			item {
 			}
 			// Header cho Files
 			if (!folderData?.files.isNullOrEmpty()) {
@@ -364,7 +379,7 @@ fun ColumnScope.FolderListView(
 							modifier = Modifier
 								.fillMaxWidth()
 								.clip(RoundedCornerShape(8.dp))
-								.clickable { /*TODO: HANDLE FILE ONCLICK*/ }
+								.clickable { toggleSelection(file.id, false) }
 								.background(
 									if (index % 2 == 0) Color.Transparent
 									else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
@@ -389,9 +404,9 @@ fun ColumnScope.FolderListView(
 								horizontalArrangement = Arrangement.spacedBy(12.dp)
 							) {
 								Icon(
-									Icons.AutoMirrored.Filled.InsertDriveFile,
+									painterResource(getFileIcon(file.name)),
 									null,
-									tint = MaterialTheme.colorScheme.onSurfaceVariant,
+									tint = Color.Unspecified,
 									modifier = Modifier.size(24.dp)
 								)
 								Text(
@@ -479,6 +494,10 @@ fun ColumnScope.FolderListView(
 						}
 					}
 				}
+			}
+
+			item {
+				Spacer(Modifier.height(80.dp))
 			}
 		}
 	}

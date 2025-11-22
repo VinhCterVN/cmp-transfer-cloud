@@ -45,6 +45,14 @@ object FileRepository {
 		}
 	}
 
+	fun getFileById(fileId: String, ownerId: String): FileOutputDto? = transaction {
+		val fileUuid = UUID.fromString(fileId)
+		val ownerUuid = UUID.fromString(ownerId)
+		Files.selectAll()
+			.where { (Files.id eq fileUuid) and (Files.ownerId eq ownerUuid) }
+			.singleOrNull()?.toFileOutputDto(getFileBreadcrumb(fileUuid, ownerUuid))
+	}
+
 	fun deleteFile(fileId: String, ownerId: String): String = transaction {
 		val fileId = UUID.fromString(fileId)
 		val ownerUuid = UUID.fromString(ownerId)

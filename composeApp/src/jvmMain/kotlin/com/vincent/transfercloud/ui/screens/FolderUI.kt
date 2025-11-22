@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -22,10 +24,16 @@ import androidx.compose.ui.draganddrop.awtTransferable
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.isBackPressed
 import androidx.compose.ui.input.pointer.isForwardPressed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
@@ -38,6 +46,7 @@ import com.vincent.transfercloud.ui.component.fileView.FolderGridView
 import com.vincent.transfercloud.ui.component.fileView.FolderListView
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.FileViewIndex
+import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.UIState
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
@@ -45,6 +54,9 @@ import io.github.alexzhirkevich.compottie.Compottie
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import io.github.alexzhirkevich.compottie.rememberLottiePainter
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import java.awt.datatransfer.DataFlavor
@@ -57,6 +69,8 @@ fun FolderView(
 	appState: AppState = koinInject<AppState>(),
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
+	val scope = rememberCoroutineScope()
+	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val navigator = LocalNavigator.currentOrThrow
 	val isCreatingFolder by appState.isCreatingFolder.collectAsState()
 	val gridState = rememberLazyGridState()
@@ -87,7 +101,18 @@ fun FolderView(
 				val transferable = event.awtTransferable
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
-					uploadingFile = files.first() as File
+					val pending = files.first() as File
+					if (pending.length() > 10 * 1024 * 1024) {
+						scope.launch {
+							scaffoldState.snackbarHostState.showSnackbar(
+								"File size exceeds 10MB limit.",
+								actionLabel = "Hide",
+								duration = SnackbarDuration.Short
+							)
+						}
+						return false
+					}
+					uploadingFile = pending
 				}
 				return true
 			}
@@ -98,6 +123,36 @@ fun FolderView(
 			Res.readBytes("files/uploading.json").decodeToString()
 		)
 	}
+	var expanded by remember { mutableStateOf(false) }
+	val focusRequester = FocusRequester()
+	val items = listOf(
+		FloatingMenuItem(Icons.Filled.CreateNewFolder, "Create Folder") { appState.isCreatingFolder.value = true },
+		FloatingMenuItem(Icons.Default.UploadFile, "New File") {
+			val file = FileKit.openFilePicker(title = "Select File")?.file
+			file?.let {
+				if (it.length() > 10 * 1024 * 1024) {
+					scope.launch {
+						scaffoldState.snackbarHostState.showSnackbar(
+							"File size exceeds 10MB limit.",
+							actionLabel = "Hide",
+							duration = SnackbarDuration.Short
+						)
+					}
+					return@let
+				}
+				viewModel.uploadFile(it)
+				scope.launch {
+					scaffoldState.snackbarHostState.showSnackbar(
+						"Uploading file: ${it.name}",
+						actionLabel = "Hide",
+						duration = SnackbarDuration.Short
+					)
+				}
+			}
+		},
+		FloatingMenuItem(Icons.Filled.SelectAll, "Select") {},
+		FloatingMenuItem(Icons.AutoMirrored.Filled.Label, "Label") {},
+	)
 	val viewIndex by appState.currentViewIndex.collectAsState()
 	val uiState by viewModel.uiState.collectAsState()
 	val blurRadius by animateDpAsState(
@@ -268,7 +323,79 @@ fun FolderView(
 						}
 					}
 				}
+				FloatingActionButtonMenu(
+					expanded = expanded,
+					modifier = Modifier.align(Alignment.BottomEnd),
+					button = {
+						ToggleFloatingActionButton(
+							modifier = Modifier.semantics {
+								traversalIndex = -1f
+								stateDescription = if (expanded) "Expanded" else "Collapsed"
+								contentDescription = "Toggle Menu"
+							}.animateFloatingActionButton(
+								visible = true,
+								alignment = Alignment.BottomEnd
+							).focusRequester(focusRequester = focusRequester),
+							checked = expanded,
+							onCheckedChange = { expanded = !expanded },
+						) {
+							val imageVector by remember {
+								derivedStateOf { if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add }
+							}
+
+							Icon(
+								painter = rememberVectorPainter(imageVector),
+								contentDescription = null,
+								modifier = Modifier.animateIcon({ checkedProgress })
+							)
+						}
+					}
+				) {
+					items.forEachIndexed { i, item ->
+						FloatingActionButtonMenuItem(
+							modifier = Modifier.semantics {
+								isTraversalGroup = true
+								if (i == items.size - 1) {
+									customActions = listOf(
+										CustomAccessibilityAction(
+											label = "Close Menu",
+											action = {
+												expanded = false
+												true
+											}
+										))
+								}
+							}.then(
+								if (i == 0) {
+									Modifier.onKeyEvent {
+										if (
+											it.type == KeyEventType.KeyDown &&
+											(it.key == Key.DirectionUp ||
+													(it.isShiftPressed && it.key == Key.Tab))
+										) {
+											focusRequester.requestFocus()
+											return@onKeyEvent true
+										}
+										return@onKeyEvent false
+									}
+								} else {
+									Modifier
+								}
+							),
+							onClick = { scope.launch { item.onClick() } },
+							icon = { Icon(item.icon, contentDescription = null) },
+							text = { Text(text = item.text) }
+						)
+					}
+				}
+
 			}
 		}
 	}
 }
+
+data class FloatingMenuItem(
+	val icon: ImageVector,
+	val text: String,
+	val onClick: suspend () -> Unit
+)

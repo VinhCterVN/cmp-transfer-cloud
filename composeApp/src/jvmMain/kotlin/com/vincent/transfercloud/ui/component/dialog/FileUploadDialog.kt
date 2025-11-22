@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
@@ -29,12 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
+import com.vincent.transfercloud.ui.state.UIState
 import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.MessageStyle
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.onEach
 import org.koin.compose.koinInject
 import java.io.File
 
@@ -54,14 +57,19 @@ fun FileUploadDialog(
 	val sharedUsers = remember { mutableStateListOf<String>() }
 	var dropdownExpanded by remember { mutableStateOf(false) }
 	var expanded by rememberSaveable { mutableStateOf(false) }
+	var uiState by remember { mutableStateOf<UIState>(UIState.Ready) }
 
 	LaunchedEffect(shareEmail) {
 		snapshotFlow { shareEmail }
+			.onEach {
+				if (it.isNotBlank()) uiState = UIState.Loading
+			}
 			.debounce(2000)
 			.collect { latest ->
 				if (latest.isNotBlank()) {
 					viewModel.searchUsersByEmail(latest)
 				}
+				uiState = UIState.Ready
 			}
 	}
 	val searchBoxHeight by animateDpAsState(
@@ -170,6 +178,14 @@ fun FileUploadDialog(
 								expanded = expanded,
 								onExpandedChange = { expanded = it },
 								placeholder = { Text("Search") },
+								leadingIcon = {
+									if (uiState == UIState.Loading) CircularProgressIndicator(
+										gapSize = 0.dp,
+										strokeCap = StrokeCap.Round,
+										modifier = Modifier.size(24.dp)
+									)
+									else Icon(Icons.Default.Person, null)
+								},
 								trailingIcon = {
 									if (shareEmail.isNotEmpty()) {
 										IconButton(
@@ -195,12 +211,19 @@ fun FileUploadDialog(
 								unfocusedIndicatorColor = MaterialTheme.colorScheme.onSurface
 							),
 						),
-						) {
+					) {
 						Box(
 							modifier = Modifier.height(150.dp)
 								.wrapContentHeight()
 						) {
 							LazyColumn(Modifier.wrapContentHeight()) {
+								if (filteredUsers.isEmpty()) {
+									item {
+										Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+											Text("No users found.", style = TitleLineLarge)
+										}
+									}
+								}
 								itemsIndexed(filteredUsers) { index, user ->
 									ListItem(
 										leadingContent = {
