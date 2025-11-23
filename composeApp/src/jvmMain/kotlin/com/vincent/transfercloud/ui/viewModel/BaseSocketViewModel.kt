@@ -32,11 +32,11 @@ open class BaseSocketViewModel(
 			)
 			send(req)
 			val line = receiveChannel.value?.readUTF8Line()
-
 			if (line.isNullOrEmpty()) {
 				onError("Empty response from server")
 				return@launch
 			}
+			println("Received: $line")
 			val res = json.decodeFromString<SocketResponse>(line)
 
 			if (res.status == ResponseStatus.SUCCESS) {

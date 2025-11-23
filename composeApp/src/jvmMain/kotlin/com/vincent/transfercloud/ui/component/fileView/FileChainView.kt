@@ -1,7 +1,6 @@
 package com.vincent.transfercloud.ui.component.fileView
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -26,16 +25,18 @@ import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.FileViewIndex
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
+import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FileChainView(
-	appState: AppState = koinInject<AppState>()
+	appState: AppState = koinInject<AppState>(),
+	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
 	val navigator = LocalNavigator.currentOrThrow
 	val chain by appState.breadcrumb.collectAsState()
-	val viewIndex by appState.currentViewIndex.collectAsState()
+	val viewIndex by viewModel.currentViewIndex.collectAsState()
 	val options = listOf(Icons.AutoMirrored.Filled.List, Icons.Default.GridView)
 
 
@@ -61,7 +62,6 @@ fun FileChainView(
 					contentPadding = ButtonDefaults.SmallContentPadding,
 					interactionSource = null,
 					modifier = Modifier.padding(0.dp)
-
 				) {
 					Text(
 						file.name,
@@ -80,7 +80,7 @@ fun FileChainView(
 		SingleChoiceSegmentedButtonRow {
 			options.forEachIndexed { index, icon ->
 				SegmentedButton(
-					onClick = { appState.currentViewIndex.value = if (index > 0) FileViewIndex.GRID else FileViewIndex.LIST },
+					onClick = { viewModel.currentViewIndex.value = if (index > 0) FileViewIndex.GRID else FileViewIndex.LIST },
 					selected = viewIndex == if (index > 0) FileViewIndex.GRID else FileViewIndex.LIST,
 					label = { Icon(icon, null) },
 					colors = SegmentedButtonDefaults.colors(

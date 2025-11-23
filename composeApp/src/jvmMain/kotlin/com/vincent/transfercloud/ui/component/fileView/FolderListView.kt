@@ -1,8 +1,13 @@
 package com.vincent.transfercloud.ui.component.fileView
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.draganddrop.dragAndDropSource
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -16,18 +21,25 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropEvent
+import androidx.compose.ui.draganddrop.DragAndDropTarget
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction
+import androidx.compose.ui.draganddrop.DragAndDropTransferData
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,26 +56,32 @@ import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.formatIsoToMonthDay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.empty_state_empty_folder
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun ColumnScope.FolderListView(
 	listState: LazyListState,
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
 	val scope = rememberCoroutineScope()
+	val windowInfo = LocalWindowInfo.current
 	val navigator = LocalNavigator.currentOrThrow
 	val folderData by viewModel.folderData.collectAsState()
+	val selectedIds by viewModel.selectedIds.collectAsState()
+	val draggedItem by viewModel.draggedItem.collectAsState()
+	val hoveredFolderId by viewModel.hoveredFolderId.collectAsState()
 	val bottomSheetState = LocalBottomSheetScaffoldState.current
 	val foldersExpanded = remember { mutableStateOf(true) }
 	val filesExpanded = remember { mutableStateOf(true) }
 	var openMenuFolderId by remember { mutableStateOf<String?>(null) }
-	var selectedIds by remember { mutableStateOf(setOf<String>()) }
+	var lastSelectedIndex by remember { mutableStateOf(-1) }
+	val borderColor = MaterialTheme.colorScheme.primary
 	val tableHeadStyle = TextStyle(
 		fontWeight = FontWeight.SemiBold,
 		fontSize = 14.sp,
@@ -88,38 +106,26 @@ fun ColumnScope.FolderListView(
 		TableHead("Type", 0.3f)
 	)
 
-	fun toggleSelection(id: String, isCtrlPressed: Boolean) {
-		selectedIds = if (isCtrlPressed) {
-			if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
-		} else {
-			if (selectedIds.contains(id)) emptySet() else setOf(id)
-		}
-	}
-	// Top selection bar (shows when any selection exists)
-	if (selectedIds.isNotEmpty()) {
-		Surface(
-			tonalElevation = 2.dp,
-			shadowElevation = 2.dp,
-			modifier = Modifier
-				.fillMaxWidth()
-				.height(56.dp)
-		) {
-			Row(
-				modifier = Modifier
-					.fillMaxSize()
-					.padding(horizontal = 16.dp),
-				verticalAlignment = Alignment.CenterVertically,
-				horizontalArrangement = Arrangement.SpaceBetween
-			) {
-				Text("${selectedIds.size} selected", style = MaterialTheme.typography.titleMedium)
-				Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-					TextButton(onClick = { /* TODO: bulk actions like download/share */ }) {
-						Text("Actions")
-					}
-					TextButton(onClick = { selectedIds = emptySet() }) {
-						Text("Clear")
-					}
-				}
+	fun handleSelection(index: Int, id: String, modifiers: PointerKeyboardModifiers) {
+		val isCtrl = modifiers.isCtrlPressed || modifiers.isMetaPressed
+		val isShift = modifiers.isShiftPressed
+
+		when {
+			isShift && lastSelectedIndex != -1 -> {
+				val start = minOf(lastSelectedIndex, index)
+				val end = maxOf(lastSelectedIndex, index)
+				val rangeIds = folderData?.subfolders?.subList(start, end + 1)?.map { it.id }
+				viewModel.setSelectedIds(rangeIds?.toSet() ?: emptySet())
+			}
+
+			isCtrl -> {
+				viewModel.setSelectedIds(if (selectedIds.contains(id)) selectedIds - id else selectedIds + id)
+				lastSelectedIndex = index
+			}
+
+			else -> {
+				viewModel.setSelectedIds(setOf(id))
+				lastSelectedIndex = index
 			}
 		}
 	}
@@ -142,6 +148,11 @@ fun ColumnScope.FolderListView(
 			state = listState,
 			contentPadding = PaddingValues(8.dp),
 		) {
+			folderViewSticky(
+				showSticky = selectedIds.isNotEmpty(),
+				count = selectedIds.size,
+				onAction = {}
+			)
 			if (!folderData?.subfolders.isNullOrEmpty()) {
 				item {
 					Row(
@@ -189,17 +200,57 @@ fun ColumnScope.FolderListView(
 						}
 					}
 					// Folders list items
-					itemsIndexed(folderData?.subfolders ?: emptyList()) { index, folder ->
+					itemsIndexed(
+						items = folderData?.subfolders ?: emptyList(),
+						key = { _, folder -> folder.id }
+					) { index, folder ->
 						val isLast = index == (folderData?.subfolders?.lastIndex ?: -1)
 						val color = MaterialTheme.colorScheme.outlineVariant
+						var hasAppeared by rememberSaveable(folder.id) { mutableStateOf(false) }
+						val isHovered = hoveredFolderId == folder.id
 						val isSelected = selectedIds.contains(folder.id)
+						val animatedProgress = remember(folder.id) {
+							Animatable(initialValue = if (hasAppeared) 1f else 0f)
+						}
+						val dragAndDropTarget = remember(folder.id, viewModel) {
+							object : DragAndDropTarget {
+								override fun onEntered(event: DragAndDropEvent) {
+									viewModel.setHoveredFolder(folder.id)
+								}
 
+								override fun onExited(event: DragAndDropEvent) {
+									if (viewModel.hoveredFolderId.value == folder.id) {
+										viewModel.setHoveredFolder(null)
+									}
+								}
+
+								override fun onDrop(event: DragAndDropEvent): Boolean {
+									viewModel.setHoveredFolder(null)
+									if (viewModel.draggedItem.value.isNotEmpty()) {
+										viewModel.moveItem(folder, folder.id)
+										return true
+									}
+									return false
+								}
+							}
+						}
+
+						LaunchedEffect(folder.id) {
+							if (!hasAppeared) {
+								delay((index % 10) * 50L)
+								animatedProgress.animateTo(
+									targetValue = 1f,
+									animationSpec = tween(300)
+								)
+								hasAppeared = true
+							}
+						}
 						Row(
 							modifier = Modifier
 								.fillMaxWidth()
-								.clip(RoundedCornerShape(8.dp))
 								.background(
-									if (index % 2 == 0) Color.Transparent
+									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
+									else if (index % 2 == 0) Color.Transparent
 									else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
 								)
 								.drawBehind {
@@ -213,17 +264,52 @@ fun ColumnScope.FolderListView(
 										)
 									}
 								}
-								.onKeyEvent { keyEvent ->
-									if (keyEvent.key == Key.CtrlLeft || keyEvent.key == Key.CtrlRight) {
-										true
-									} else {
-										false
+								.drawWithContent {
+									drawContent()
+									if (isHovered) {
+										drawRoundRect(
+											color = borderColor,
+											size = size,
+											cornerRadius = CornerRadius(12.dp.toPx()),
+											style = Stroke(width = 2.dp.toPx())
+										)
 									}
 								}
-								.clickable(onClick = {
-									// TODO: Detect Ctrl+Click - for now using simple click
-									scope.launch { navigator.push(FolderDetailView(folder.id)) }
-								})
+								.combinedClickable(
+									onClick = {
+										val modifiers = windowInfo.keyboardModifiers
+										handleSelection(index, folder.id, modifiers)
+									},
+									onDoubleClick = {
+										scope.launch { navigator.push(FolderDetailView(folder.id)) }
+									},
+								)
+								.graphicsLayer {
+									alpha = animatedProgress.value
+									val scale = 0.8f + (0.2f * animatedProgress.value)
+									scaleX = scale
+									scaleY = scale
+								}
+								.dragAndDropSource { offset ->
+									viewModel.startDragging(folder.id)
+									DragAndDropTransferData(
+										transferable = createTransferable(folder.id),
+										dragDecorationOffset = Offset.Zero,
+										supportedActions = listOf(
+											DragAndDropTransferAction.Move,
+											DragAndDropTransferAction.Copy,
+										),
+										onTransferCompleted = { action ->
+											viewModel.stopDragging()
+										},
+									)
+								}
+								.dragAndDropTarget(
+									shouldStartDragAndDrop = { event ->
+										draggedItem.isNotEmpty() && draggedItem != folder.id
+									},
+									target = dragAndDropTarget
+								)
 								.padding(horizontal = 16.dp, vertical = 8.dp),
 							verticalAlignment = Alignment.CenterVertically
 						) {
@@ -350,7 +436,6 @@ fun ColumnScope.FolderListView(
 						)
 					}
 				}
-				// Files table header (reuse same structure)
 				if (filesExpanded.value) {
 					item {
 						Row(
@@ -370,18 +455,44 @@ fun ColumnScope.FolderListView(
 							Spacer(Modifier.width(40.dp))
 						}
 					}
-					// Files list items (demo with 20 items)
-					itemsIndexed(folderData?.files ?: emptyList()) { index, file ->
+					itemsIndexed(
+						items = folderData?.files ?: emptyList(),
+						key = { _, file -> file.id }
+					) { index, file ->
 						val isLast = index == (folderData?.subfolders?.lastIndex ?: -1)
 						val color = MaterialTheme.colorScheme.outlineVariant
+						val isSelected = selectedIds.contains(file.id)
+						var hasAppeared by rememberSaveable(file.id) { mutableStateOf(false) }
+						val animatedProgress = remember(file.id) {
+							Animatable(initialValue = if (hasAppeared) 1f else 0f)
+						}
+						LaunchedEffect(file.id) {
+							if (!hasAppeared) {
+								delay((index % 10) * 50L)
+								animatedProgress.animateTo(
+									targetValue = 1f,
+									animationSpec = tween(300)
+								)
+								hasAppeared = true
+							}
+						}
 
 						Row(
 							modifier = Modifier
 								.fillMaxWidth()
-								.clip(RoundedCornerShape(8.dp))
-								.clickable { toggleSelection(file.id, false) }
+//								.clip(RoundedCornerShape(8.dp))
+								.combinedClickable(
+									onClick = {
+										val modifiers = windowInfo.keyboardModifiers
+										handleSelection(index, file.id, modifiers)
+									},
+									onDoubleClick = {
+										scope.launch { navigator.push(FolderDetailView(file.id)) }
+									}
+								)
 								.background(
-									if (index % 2 == 0) Color.Transparent
+									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
+									else if (index % 2 == 0) Color.Transparent
 									else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.1f)
 								)
 								.drawBehind {
@@ -394,6 +505,26 @@ fun ColumnScope.FolderListView(
 											strokeWidth = stroke
 										)
 									}
+								}
+								.graphicsLayer {
+									alpha = animatedProgress.value
+									val scale = 0.8f + (0.2f * animatedProgress.value)
+									scaleX = scale
+									scaleY = scale
+								}
+								.dragAndDropSource { offset ->
+									viewModel.startDragging(file.id)
+									DragAndDropTransferData(
+										transferable = createTransferable(file.id),
+										dragDecorationOffset = Offset.Zero,
+										supportedActions = listOf(
+											DragAndDropTransferAction.Move,
+											DragAndDropTransferAction.Copy,
+										),
+										onTransferCompleted = { action ->
+											viewModel.stopDragging()
+										},
+									)
 								}
 								.padding(horizontal = 16.dp, vertical = 8.dp),
 							verticalAlignment = Alignment.CenterVertically
@@ -476,7 +607,7 @@ fun ColumnScope.FolderListView(
 									onDismissRequest = { openMenuFolderId = null },
 									onRename = { openMenuFolderId = null },
 									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
-									onDownload = {},
+									onDownload = { viewModel.downloadFile(file) },
 									onDelete = {
 										scope.launch {
 											openMenuFolderId = null

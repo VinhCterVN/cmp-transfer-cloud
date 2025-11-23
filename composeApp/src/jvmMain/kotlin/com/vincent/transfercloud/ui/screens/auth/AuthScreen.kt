@@ -21,12 +21,13 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
+import com.vincent.transfercloud.ui.component.dialog.NetworkConfigDialog
 import com.vincent.transfercloud.ui.screens.TransferApp
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.HeadLineMedium
 import com.vincent.transfercloud.ui.theme.TitleLineBig
-import com.vincent.transfercloud.ui.viewModel.AuthViewModel
+import com.vincent.transfercloud.ui.viewModel.AppViewModel
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
@@ -37,7 +38,7 @@ import transfercloud.composeapp.generated.resources.undraw_login
 @Composable
 fun AppGate(
 	appState: AppState = koinInject<AppState>(),
-	viewModel: AuthViewModel = AuthViewModel(appState)
+	viewModel: AppViewModel = koinInject<AppViewModel>()
 ) {
 	val scope = rememberCoroutineScope()
 	val windowState = koinInject<WindowState>()
@@ -48,6 +49,7 @@ fun AppGate(
 	var username: String by remember { mutableStateOf("Vincent Tran") }
 	var email: String by remember { mutableStateOf("vincent@mail.com") }
 	var password: String by remember { mutableStateOf("abcbac") }
+	var configShow by rememberSaveable { mutableStateOf(false) }
 
 	LaunchedEffect(currentUser) {
 		if (currentUser == null) scope.launch {
@@ -195,7 +197,7 @@ fun AppGate(
 							horizontalArrangement = Arrangement.spacedBy(8.dp)
 						) {
 							OutlinedButton(
-								onClick = { }, shape = RoundedCornerShape(8.dp)
+								onClick = { configShow = true }, shape = RoundedCornerShape(8.dp)
 							) {
 								Text("Config")
 							}
@@ -245,6 +247,8 @@ fun AppGate(
 			}
 		}
 	}
+
+	if (configShow) NetworkConfigDialog { configShow = false }
 }
 
 enum class AuthDestination {

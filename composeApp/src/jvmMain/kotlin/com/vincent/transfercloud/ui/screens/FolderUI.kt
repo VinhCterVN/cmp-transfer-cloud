@@ -54,8 +54,7 @@ import io.github.alexzhirkevich.compottie.Compottie
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.rememberLottieComposition
 import io.github.alexzhirkevich.compottie.rememberLottiePainter
-import io.github.vinceglb.filekit.FileKit
-import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
@@ -118,42 +117,48 @@ fun FolderView(
 			}
 		}
 	}
+	var expanded by remember { mutableStateOf(false) }
+	val focusRequester = FocusRequester()
 	val composition by rememberLottieComposition {
 		LottieCompositionSpec.JsonString(
 			Res.readBytes("files/uploading.json").decodeToString()
 		)
 	}
-	var expanded by remember { mutableStateOf(false) }
-	val focusRequester = FocusRequester()
-	val items = listOf(
-		FloatingMenuItem(Icons.Filled.CreateNewFolder, "Create Folder") { appState.isCreatingFolder.value = true },
-		FloatingMenuItem(Icons.Default.UploadFile, "New File") {
-			val file = FileKit.openFilePicker(title = "Select File")?.file
-			file?.let {
+	val fileOpen = rememberFilePickerLauncher { platformFile ->
+		val file = platformFile?.file
+		file?.let {
+			scope.launch {
 				if (it.length() > 10 * 1024 * 1024) {
-					scope.launch {
-						scaffoldState.snackbarHostState.showSnackbar(
-							"File size exceeds 10MB limit.",
-							actionLabel = "Hide",
-							duration = SnackbarDuration.Short
-						)
-					}
-					return@let
-				}
-				viewModel.uploadFile(it)
-				scope.launch {
 					scaffoldState.snackbarHostState.showSnackbar(
-						"Uploading file: ${it.name}",
+						"File size exceeds 10MB limit.",
 						actionLabel = "Hide",
 						duration = SnackbarDuration.Short
 					)
+					return@launch
 				}
+				scaffoldState.snackbarHostState.showSnackbar(
+					"Uploading file: ${it.name}",
+					actionLabel = "Hide",
+					duration = SnackbarDuration.Short
+				)
+				viewModel.uploadFile(it).join()
+				scaffoldState.snackbarHostState.showSnackbar(
+					"File ${it.name} uploaded successfully.",
+					actionLabel = "Hide",
+					duration = SnackbarDuration.Short
+				)
 			}
+		}
+	}
+	val items = listOf(
+		FloatingMenuItem(Icons.Filled.CreateNewFolder, "Create Folder") { appState.isCreatingFolder.value = true },
+		FloatingMenuItem(Icons.Default.UploadFile, "New File") {
+			fileOpen.launch()
 		},
-		FloatingMenuItem(Icons.Filled.SelectAll, "Select") {},
+		FloatingMenuItem(Icons.Filled.SelectAll, "Select All") { viewModel.selectAll() },
 		FloatingMenuItem(Icons.AutoMirrored.Filled.Label, "Label") {},
 	)
-	val viewIndex by appState.currentViewIndex.collectAsState()
+	val viewIndex by viewModel.currentViewIndex.collectAsState()
 	val uiState by viewModel.uiState.collectAsState()
 	val blurRadius by animateDpAsState(
 		targetValue = if (showTargetBorder) 4.dp else 0.dp,
@@ -161,6 +166,7 @@ fun FolderView(
 	)
 	LaunchedEffect(Unit) {
 		appState.currentFolder.emit(id)
+		viewModel.setSelectedIds(emptySet())
 		viewModel.getFolderData(id)
 	}
 
@@ -240,22 +246,24 @@ fun FolderView(
 							}
 						}
 						Box(
-							Modifier.fillMaxSize().zIndex(100f).dragAndDropTarget(
-								shouldStartDragAndDrop = { event ->
-									println(event.action)
-									true
-								},
-								target = dragAndDropTarget
-							).then(
-								if (showTargetBorder) Modifier.border(
-									2.dp,
-									Color.Blue.copy(0.75f),
-									RoundedCornerShape(12.dp)
-								).background(
-									MaterialTheme.colorScheme.primaryContainer.copy(0.75f),
-									RoundedCornerShape(12.dp)
-								) else Modifier
-							)
+							Modifier.fillMaxSize().zIndex(100f)
+//								.dragAndDropTarget(
+//									shouldStartDragAndDrop = { event ->
+//										println(event.action)
+//										true
+//									},
+//									target = dragAndDropTarget
+//								)
+								.then(
+									if (showTargetBorder) Modifier.border(
+										2.dp,
+										Color.Blue.copy(0.75f),
+										RoundedCornerShape(12.dp)
+									).background(
+										MaterialTheme.colorScheme.primaryContainer.copy(0.75f),
+										RoundedCornerShape(12.dp)
+									) else Modifier
+								)
 						)
 					}
 				}
@@ -382,7 +390,7 @@ fun FolderView(
 									Modifier
 								}
 							),
-							onClick = { scope.launch { item.onClick() } },
+							onClick = item.onClick,
 							icon = { Icon(item.icon, contentDescription = null) },
 							text = { Text(text = item.text) }
 						)
@@ -397,5 +405,5 @@ fun FolderView(
 data class FloatingMenuItem(
 	val icon: ImageVector,
 	val text: String,
-	val onClick: suspend () -> Unit
+	val onClick: () -> Unit
 )

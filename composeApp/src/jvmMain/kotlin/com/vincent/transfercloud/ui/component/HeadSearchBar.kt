@@ -51,7 +51,7 @@ fun HeadSearchBar() {
 					Text(
 						text = "Search file", style = LocalTextStyle.current.copy(
 							color = MaterialTheme.colorScheme.onSecondaryContainer.copy(0.5f),
-						)
+						), maxLines = 1
 					)
 				}
 				innerTextField()

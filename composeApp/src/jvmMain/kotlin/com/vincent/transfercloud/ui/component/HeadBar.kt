@@ -1,10 +1,7 @@
 package com.vincent.transfercloud.ui.component
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -14,16 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.zIndex
-import coil3.compose.AsyncImage
+import com.vincent.transfercloud.ui.component.dialog.AppSettingsDialog
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
 import com.vincent.transfercloud.ui.viewModel.AppViewModel
@@ -41,7 +36,7 @@ fun HeaderBar(
 	val currentUser by appState.currentUser.collectAsState()
 	val isDark by appState.darkTheme.collectAsState()
 	var expanded by rememberSaveable { mutableStateOf(false) }
-
+	var showSettings by remember { mutableStateOf(false) }
 	Row(
 		modifier = Modifier.padding(horizontal = 8.dp),
 		verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -80,18 +75,12 @@ fun HeaderBar(
 		}
 
 		Box(Modifier.size(50.dp)) {
-			AsyncImage(
-				model = "https://i.pravatar.cc/150?u=${currentUser?.fullName ?: "James"}",
-				contentDescription = "Avatar",
-				contentScale = ContentScale.Crop,
-				modifier = Modifier.fillMaxSize()
-					.border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-					.padding(3.dp).clip(CircleShape).aspectRatio(1f).clickable(
-						onClick = { expanded = !expanded }
-					)
+			ConnectivityAvatar(
+				imageUrl = currentUser!!.avatarUrl!!,
+				onClick = { expanded = !expanded }
 			)
 			DropdownMenu(
-				expanded, { expanded = false },
+				expanded = expanded, { expanded = false },
 				offset = DpOffset(x = (-40).dp, y = 0.dp),
 				modifier = Modifier.zIndex(10f).widthIn(min = 200.dp),
 				containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -106,7 +95,7 @@ fun HeaderBar(
 				DropdownMenuItem(
 					text = { Text("Settings") },
 					leadingIcon = { Icon(Icons.Default.Settings, null) },
-					onClick = {},
+					onClick = { showSettings = true },
 					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 				HorizontalDivider()
@@ -119,5 +108,6 @@ fun HeaderBar(
 			}
 		}
 	}
-
+	if (showSettings)
+		AppSettingsDialog { showSettings = false }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
 import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
+import com.vincent.transfercloud.ui.state.FileViewIndex
 import com.vincent.transfercloud.ui.state.UIState
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.absolutePath
@@ -18,11 +19,51 @@ import java.io.File
 class FolderViewModel(
 	appState: AppState,
 ) : BaseSocketViewModel(appState) {
+	val currentUser = appState.currentUser.value!!
+	val folderData = MutableStateFlow<FolderWithContentsDto?>(null)
+	val filteredUsers = MutableStateFlow<List<UserOutputDto>>(emptyList())
+	private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
+	val selectedIds = _selectedIds.asStateFlow()
+	val currentViewIndex = MutableStateFlow(FileViewIndex.GRID)
+	private val _draggedItem = MutableStateFlow("")
+	val draggedItem = _draggedItem.asStateFlow()
+	private val _hoveredFolderId = MutableStateFlow<String?>(null)
+	val hoveredFolderId = _hoveredFolderId.asStateFlow()
 	private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
 	val uiState = _uiState.asStateFlow()
-	val folderData = MutableStateFlow<FolderWithContentsDto?>(null)
-	val currentUser = appState.currentUser.value!!
-	val filteredUsers = MutableStateFlow<List<UserOutputDto>>(emptyList())
+
+	fun setSelectedIds(ids: Set<String>) {
+		_selectedIds.value = ids
+	}
+
+	fun toggleSelection(id: String, isCtrlPressed: Boolean) {
+		_selectedIds.value = if (isCtrlPressed) {
+			if (_selectedIds.value.contains(id)) _selectedIds.value - id else _selectedIds.value + id
+		} else setOf(id)
+	}
+
+	fun selectAll() {
+		_selectedIds.value = folderData.value?.let { data ->
+			(data.subfolders.map { it.id } + data.files.map { it.id }).toSet()
+		} ?: emptySet()
+	}
+
+	fun startDragging(item: String) {
+		_draggedItem.value = item
+	}
+
+	fun stopDragging() {
+		_draggedItem.value = ""
+	}
+
+	fun setHoveredFolder(folderId: String?) {
+		_hoveredFolderId.value = folderId
+	}
+
+	fun moveItem(itemToMove: FolderOutputDto, targetFolderId: String) {
+		val itemId = itemToMove.id
+		println("Moved to $targetFolderId")
+	}
 
 	suspend fun getFolderData(folderId: String) {
 		_uiState.value = UIState.Loading
@@ -33,7 +74,9 @@ class FolderViewModel(
 			onSuccess = { res ->
 				val data = json.decodeFromString<GetFolderContentsRequestDto>(res.data!!)
 				appState.breadcrumb.value = data.data?.folder?.breadcrumb ?: emptyList()
-				folderData.value = data.data
+				folderData.value = data.data?.copy(
+					subfolders = data.data?.subfolders?.sortedBy { it.name } ?: emptyList(),
+				)
 				_uiState.value = UIState.Ready
 			},
 			onError = { msg ->

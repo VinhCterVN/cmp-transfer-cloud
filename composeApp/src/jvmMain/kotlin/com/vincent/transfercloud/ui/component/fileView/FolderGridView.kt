@@ -1,24 +1,44 @@
+@file:OptIn(ExperimentalComposeUiApi::class)
+
 package com.vincent.transfercloud.ui.component.fileView
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.draganddrop.dragAndDropSource
+import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.*
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.isMetaPressed
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,26 +54,36 @@ import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.empty_state_empty_folder
+import java.awt.datatransfer.StringSelection
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun ColumnScope.FolderGridView(
 	listState: LazyGridState,
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
 	val scope = rememberCoroutineScope()
+	val windowInfo = LocalWindowInfo.current
 	val navigator = LocalNavigator.currentOrThrow
 	val bottomSheetState = LocalBottomSheetScaffoldState.current
 	val folderData by viewModel.folderData.collectAsState()
 	val foldersExpanded = remember { mutableStateOf(true) }
 	val filesExpanded = remember { mutableStateOf(true) }
 	var openMenuFolderId by remember { mutableStateOf<String?>(null) }
+	val selectedIds by viewModel.selectedIds.collectAsState()
+	val draggedItem by viewModel.draggedItem.collectAsState()
+	val hoveredFolderId by viewModel.hoveredFolderId.collectAsState()
+	val borderColor = MaterialTheme.colorScheme.primary
 
+	LaunchedEffect(draggedItem) {
+		viewModel.setHoveredFolder(null)
+	}
 
 	if (folderData?.subfolders.isNullOrEmpty() && folderData?.files.isNullOrEmpty()) {
 		Column(
@@ -75,6 +105,67 @@ fun ColumnScope.FolderGridView(
 			columns = GridCells.Adaptive(minSize = 250.dp),
 			contentPadding = PaddingValues(8.dp),
 		) {
+			if (selectedIds.isNotEmpty()) {
+				stickyHeader {
+					Surface(
+						tonalElevation = 2.dp,
+						shadowElevation = 2.dp,
+						modifier = Modifier
+							.fillMaxWidth()
+							.clip(CircleShape)
+					) {
+						Row(
+							modifier = Modifier.fillMaxSize(),
+							verticalAlignment = Alignment.CenterVertically,
+							horizontalArrangement = Arrangement.spacedBy(4.dp)
+						) {
+							TooltipBox(
+								positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+								tooltip = {
+									PlainTooltip { Text("Clear selected") }
+								},
+								state = rememberTooltipState()
+							) {
+								IconButton(onClick = { viewModel.setSelectedIds(emptySet()) }) {
+									Icon(Icons.Default.Clear, null)
+								}
+							}
+
+							Text(
+								"Selected ${selectedIds.size} item${if (selectedIds.size != 1) "s" else ""}",
+								style = MaterialTheme.typography.titleMedium
+							)
+
+							TooltipBox(
+								positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+								tooltip = {
+									PlainTooltip { Text("Share with anyone") }
+								},
+								state = rememberTooltipState()
+							) {
+								IconButton({}) {
+									Icon(Icons.Default.PersonAdd, null, Modifier.size(20.dp))
+								}
+							}
+
+							Spacer(Modifier.weight(1f))
+
+							Row(
+								modifier = Modifier.padding(end = 4.dp),
+								horizontalArrangement = Arrangement.spacedBy(8.dp),
+								verticalAlignment = Alignment.CenterVertically
+							) {
+								TextButton(onClick = { /* TODO: bulk actions like download/share */ }) {
+									Text("Actions")
+								}
+								TextButton(onClick = { viewModel.setSelectedIds(emptySet()) }) {
+									Text("Clear")
+								}
+							}
+						}
+					}
+				}
+			}
 			if (!folderData?.subfolders.isNullOrEmpty()) {
 				item(span = { GridItemSpan(maxLineSpan) }) {
 					ExpandButton(
@@ -83,17 +174,105 @@ fun ColumnScope.FolderGridView(
 					)
 				}
 				if (foldersExpanded.value) {
-					itemsIndexed(folderData?.subfolders ?: emptyList()) { index, folder ->
+					itemsIndexed(
+						items = folderData?.subfolders ?: emptyList(),
+						key = { _, folder -> folder.id }
+					) { index, folder ->
+						val isSelected = remember(selectedIds) { selectedIds.contains(folder.id) }
+						var hasAppeared by rememberSaveable(folder.id) { mutableStateOf(false) }
+						val isHovered = hoveredFolderId == folder.id
+						val animatedProgress = remember(folder.id) {
+							Animatable(initialValue = if (hasAppeared) 1f else 0f)
+						}
+						val dragAndDropTarget = remember(folder.id, viewModel) {
+							object : DragAndDropTarget {
+								override fun onEntered(event: DragAndDropEvent) {
+									viewModel.setHoveredFolder(folder.id)
+								}
+
+								override fun onExited(event: DragAndDropEvent) {
+									if (viewModel.hoveredFolderId.value == folder.id) {
+										viewModel.setHoveredFolder(null)
+									}
+								}
+
+								override fun onDrop(event: DragAndDropEvent): Boolean {
+									viewModel.setHoveredFolder(null)
+									if (viewModel.draggedItem.value.isNotEmpty()) {
+										viewModel.moveItem(folder, folder.id)
+										return true
+									}
+									return false
+								}
+							}
+						}
+						LaunchedEffect(folder.id) {
+							if (!hasAppeared) {
+								delay((index % 10) * 50L)
+								animatedProgress.animateTo(
+									targetValue = 1f,
+									animationSpec = tween(300)
+								)
+								hasAppeared = true
+							}
+						}
 						Card(
-							onClick = {
-								scope.launch { navigator.push(FolderDetailView(folder.id)) }
-							},
-							colors = CardDefaults.cardColors(
-								containerColor = MaterialTheme.colorScheme.surfaceVariant
-							),
-							elevation = CardDefaults.cardElevation(2.dp),
 							shape = RoundedCornerShape(12.dp),
-							modifier = Modifier.padding(8.dp).height(55.dp)
+							elevation = CardDefaults.cardElevation(2.dp),
+							colors = CardDefaults.cardColors(
+								containerColor = when {
+									isHovered -> MaterialTheme.colorScheme.primaryContainer
+									isSelected -> MaterialTheme.colorScheme.primaryContainer
+									else -> MaterialTheme.colorScheme.surfaceVariant
+								}
+							),
+							modifier = Modifier
+								.padding(8.dp).height(55.dp)
+								.clip(RoundedCornerShape(12.dp))
+								.graphicsLayer {
+									alpha = animatedProgress.value
+									val scale = 0.8f + (0.2f * animatedProgress.value)
+									scaleX = scale
+									scaleY = scale
+								}
+								.drawWithContent {
+									drawContent()
+									if (isHovered) {
+										drawRoundRect(
+											color = borderColor,
+											size = size,
+											cornerRadius = CornerRadius(12.dp.toPx()),
+											style = Stroke(width = 2.dp.toPx())
+										)
+									}
+								}
+								.dragAndDropSource { offset ->
+									viewModel.startDragging(folder.id)
+									DragAndDropTransferData(
+										transferable = createTransferable(folder.id),
+										dragDecorationOffset = Offset.Zero,
+										supportedActions = listOf(
+											DragAndDropTransferAction.Move,
+											DragAndDropTransferAction.Copy,
+										),
+										onTransferCompleted = { action ->
+											viewModel.stopDragging()
+										},
+									)
+								}
+								.dragAndDropTarget(
+									shouldStartDragAndDrop = { event ->
+										draggedItem.isNotEmpty() && draggedItem != folder.id
+									},
+									target = dragAndDropTarget
+								).combinedClickable(
+									onClick = {
+										val modifiers = windowInfo.keyboardModifiers
+										val isCtrlPressed = modifiers.isCtrlPressed || modifiers.isMetaPressed
+										viewModel.toggleSelection(folder.id, isCtrlPressed)
+									},
+									onDoubleClick = { navigator.push(FolderDetailView(folder.id)) },
+								),
 						) {
 							Row(
 								Modifier.fillMaxSize().padding(horizontal = 12.dp),
@@ -138,14 +317,14 @@ fun ColumnScope.FolderGridView(
 										onRename = { openMenuFolderId = null },
 										onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
 										onDownload = {
-											viewModel.downloadFolder(folder)
-											openMenuFolderId = null
 											scope.launch {
 												bottomSheetState.snackbarHostState.showSnackbar(
 													"Downloading ${folder.name}...",
 													actionLabel = "OK",
 													duration = SnackbarDuration.Short
 												)
+												viewModel.downloadFolder(folder)
+												openMenuFolderId = null
 											}
 										},
 										onDelete = {
@@ -172,15 +351,62 @@ fun ColumnScope.FolderGridView(
 					ExpandButton(filesExpanded, "Files (${folderData?.files?.size ?: 0})")
 				}
 				if (filesExpanded.value) {
-					itemsIndexed(folderData?.files ?: emptyList()) { index, file ->
+					itemsIndexed(
+						items = folderData?.files ?: emptyList(),
+						key = { _, file -> file.id }
+					) { index, file ->
+						val isSelected = selectedIds.contains(file.id)
+						var hasAppeared by rememberSaveable(file.id) { mutableStateOf(false) }
+						val animatedProgress = remember(file.id) {
+							Animatable(initialValue = if (hasAppeared) 1f else 0f)
+						}
+						LaunchedEffect(file.id) {
+							if (!hasAppeared) {
+								delay((index % 10) * 50L)
+								animatedProgress.animateTo(
+									targetValue = 1f,
+									animationSpec = tween(300)
+								)
+								hasAppeared = true
+							}
+						}
+
 						Card(
-							onClick = {},
-							colors = CardDefaults.cardColors(
-								containerColor = MaterialTheme.colorScheme.surfaceVariant
-							),
 							elevation = CardDefaults.cardElevation(2.dp),
 							shape = RoundedCornerShape(12.dp),
+							colors = CardDefaults.cardColors(
+								containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+							),
 							modifier = Modifier.padding(8.dp).aspectRatio(1f)
+								.clip(RoundedCornerShape(12.dp))
+								.combinedClickable(
+									onClick = {
+										val modifiers = windowInfo.keyboardModifiers
+										val isCtrlPressed = modifiers.isCtrlPressed || modifiers.isMetaPressed
+										viewModel.toggleSelection(file.id, isCtrlPressed)
+									},
+									onDoubleClick = {}
+								)
+								.graphicsLayer {
+									alpha = animatedProgress.value
+									val scale = 0.8f + (0.2f * animatedProgress.value)
+									scaleX = scale
+									scaleY = scale
+								}
+								.dragAndDropSource { offset ->
+									viewModel.startDragging(file.id)
+									DragAndDropTransferData(
+										transferable = createTransferable(file.id),
+										dragDecorationOffset = Offset.Zero,
+										supportedActions = listOf(
+											DragAndDropTransferAction.Move,
+											DragAndDropTransferAction.Copy,
+										),
+										onTransferCompleted = { action ->
+											viewModel.stopDragging()
+										},
+									)
+								}
 						) {
 							Column(
 								Modifier.fillMaxSize().padding(8.dp)
@@ -225,11 +451,16 @@ fun ColumnScope.FolderGridView(
 											onRename = { openMenuFolderId = null },
 											onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
 											onDownload = {
-												viewModel.downloadFile(file)
-												openMenuFolderId = null
 												scope.launch {
 													bottomSheetState.snackbarHostState.showSnackbar(
 														"Downloading ${file.name}...",
+														actionLabel = "OK",
+														duration = SnackbarDuration.Short
+													)
+													viewModel.downloadFile(file).join()
+													openMenuFolderId = null
+													bottomSheetState.snackbarHostState.showSnackbar(
+														"${file.name} has been downloaded.",
 														actionLabel = "OK",
 														duration = SnackbarDuration.Short
 													)
@@ -239,12 +470,12 @@ fun ColumnScope.FolderGridView(
 												scope.launch {
 													openMenuFolderId = null
 													val res = bottomSheetState.snackbarHostState.showSnackbar(
-														"Folder ${file.name} has been deleted.",
+														"File ${file.name} has been deleted.",
 														actionLabel = "Undo",
 														duration = SnackbarDuration.Short,
 													)
 													if (res == SnackbarResult.Dismissed)
-														viewModel.deleteFolder(file.id, file.ownerId)
+														viewModel.deleteFile(file.id, file.ownerId)
 												}
 											}
 										)
@@ -277,4 +508,10 @@ fun ColumnScope.FolderGridView(
 			}
 		}
 	}
+}
+
+fun createTransferable(text: String): DragAndDropTransferable {
+	// Desktop (Swing/AWT) cần Transferable interface
+	val stringSelection = StringSelection(text)
+	return DragAndDropTransferable(stringSelection)
 }
