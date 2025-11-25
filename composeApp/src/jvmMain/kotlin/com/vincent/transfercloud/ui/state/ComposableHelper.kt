@@ -12,6 +12,8 @@ fun getFileIcon(fileName: String): DrawableResource {
 		"pdf" -> Res.drawable.mdi__file_pdf_box
 		"doc", "docx", "txt", "odt", "rtf" -> Res.drawable.material_icon_theme__document
 		"apk" -> Res.drawable.material_symbols__apk_document
+		"exe" -> Res.drawable.carbon__executable_program
+		"zip", "rar", "7z", "tar", "gz" -> Res.drawable.mdi__zip_box
 		else -> Res.drawable.mdi__file
 	}
 }

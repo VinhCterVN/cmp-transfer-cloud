@@ -63,7 +63,7 @@ import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun FolderView(
+fun FolderUI(
 	id: String,
 	appState: AppState = koinInject<AppState>(),
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
@@ -76,6 +76,8 @@ fun FolderView(
 	val listState = rememberLazyListState()
 	var showTargetBorder by remember { mutableStateOf(false) }
 	var uploadingFile by remember { mutableStateOf<File?>(null) }
+	val draggedItem by viewModel.draggedItem.collectAsState()
+
 	val dragAndDropTarget = remember {
 		object : DragAndDropTarget {
 			override fun onStarted(event: DragAndDropEvent) {
@@ -167,7 +169,6 @@ fun FolderView(
 	LaunchedEffect(Unit) {
 		appState.currentFolder.emit(id)
 		viewModel.setSelectedIds(emptySet())
-		viewModel.getFolderData(id)
 	}
 
 	Box(
@@ -215,7 +216,14 @@ fun FolderView(
 						title = {
 						}
 					)
-					Text("Error loading folder data.")
+					Text("Error loading folder data.", style = TitleLineLarge)
+					ElevatedButton({
+						scope.launch {
+						viewModel.getFolderData()
+						}
+					}) {
+						Text("Retry", style = TitleLineLarge)
+					}
 				}
 			}
 
@@ -224,7 +232,7 @@ fun FolderView(
 				FileUploadDialog(
 					uploadFile = uploadingFile,
 					onCancel = { uploadingFile = null },
-					action = { viewModel.uploadFile(uploadingFile); uploadingFile = null }
+					action = { uploadingFile = null }
 				)
 				Column(
 					Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
@@ -247,13 +255,12 @@ fun FolderView(
 						}
 						Box(
 							Modifier.fillMaxSize().zIndex(100f)
-//								.dragAndDropTarget(
-//									shouldStartDragAndDrop = { event ->
-//										println(event.action)
-//										true
-//									},
-//									target = dragAndDropTarget
-//								)
+								.dragAndDropTarget(
+									shouldStartDragAndDrop = { event ->
+										draggedItem == null
+									},
+									target = dragAndDropTarget
+								)
 								.then(
 									if (showTargetBorder) Modifier.border(
 										2.dp,

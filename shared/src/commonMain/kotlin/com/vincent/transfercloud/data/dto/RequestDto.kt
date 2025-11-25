@@ -30,5 +30,6 @@ data class CreateFileRequest(
 	val parentFolderId: String,
 	val fileSize: Long,
 	val mimeType: String,
+	val shareIds: List<String> = emptyList(),
 	val data: ByteArray
 )

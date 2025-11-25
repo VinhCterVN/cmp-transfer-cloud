@@ -53,6 +53,7 @@ import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
+import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -198,8 +199,13 @@ fun ColumnScope.FolderGridView(
 
 								override fun onDrop(event: DragAndDropEvent): Boolean {
 									viewModel.setHoveredFolder(null)
-									if (viewModel.draggedItem.value.isNotEmpty()) {
-										viewModel.moveItem(folder, folder.id)
+									viewModel.draggedItem.value?.let {
+										viewModel.moveItem(folder.id)
+										scope.launch { bottomSheetState.snackbarHostState.showSnackbar(
+											"${if (it.second == FolderObject.FOLDER) "Folder" else "File"} has been moved to ${folder.name}.",
+											actionLabel = "OK",
+											duration = SnackbarDuration.Short,
+										) }
 										return true
 									}
 									return false
@@ -221,8 +227,7 @@ fun ColumnScope.FolderGridView(
 							elevation = CardDefaults.cardElevation(2.dp),
 							colors = CardDefaults.cardColors(
 								containerColor = when {
-									isHovered -> MaterialTheme.colorScheme.primaryContainer
-									isSelected -> MaterialTheme.colorScheme.primaryContainer
+									isHovered || isSelected -> MaterialTheme.colorScheme.primaryContainer
 									else -> MaterialTheme.colorScheme.surfaceVariant
 								}
 							),
@@ -247,7 +252,7 @@ fun ColumnScope.FolderGridView(
 									}
 								}
 								.dragAndDropSource { offset ->
-									viewModel.startDragging(folder.id)
+									viewModel.startDragging(folder.id to FolderObject.FOLDER)
 									DragAndDropTransferData(
 										transferable = createTransferable(folder.id),
 										dragDecorationOffset = Offset.Zero,
@@ -255,14 +260,12 @@ fun ColumnScope.FolderGridView(
 											DragAndDropTransferAction.Move,
 											DragAndDropTransferAction.Copy,
 										),
-										onTransferCompleted = { action ->
-											viewModel.stopDragging()
-										},
+										onTransferCompleted = { viewModel.stopDragging() },
 									)
 								}
 								.dragAndDropTarget(
 									shouldStartDragAndDrop = { event ->
-										draggedItem.isNotEmpty() && draggedItem != folder.id
+										draggedItem != null && draggedItem?.first != folder.id
 									},
 									target = dragAndDropTarget
 								).combinedClickable(
@@ -375,18 +378,13 @@ fun ColumnScope.FolderGridView(
 							elevation = CardDefaults.cardElevation(2.dp),
 							shape = RoundedCornerShape(12.dp),
 							colors = CardDefaults.cardColors(
-								containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+								containerColor = when {
+									isSelected -> MaterialTheme.colorScheme.primaryContainer
+									else -> MaterialTheme.colorScheme.surfaceVariant
+								}
 							),
 							modifier = Modifier.padding(8.dp).aspectRatio(1f)
 								.clip(RoundedCornerShape(12.dp))
-								.combinedClickable(
-									onClick = {
-										val modifiers = windowInfo.keyboardModifiers
-										val isCtrlPressed = modifiers.isCtrlPressed || modifiers.isMetaPressed
-										viewModel.toggleSelection(file.id, isCtrlPressed)
-									},
-									onDoubleClick = {}
-								)
 								.graphicsLayer {
 									alpha = animatedProgress.value
 									val scale = 0.8f + (0.2f * animatedProgress.value)
@@ -394,7 +392,7 @@ fun ColumnScope.FolderGridView(
 									scaleY = scale
 								}
 								.dragAndDropSource { offset ->
-									viewModel.startDragging(file.id)
+									viewModel.startDragging(file.id to FolderObject.FILE)
 									DragAndDropTransferData(
 										transferable = createTransferable(file.id),
 										dragDecorationOffset = Offset.Zero,
@@ -407,6 +405,14 @@ fun ColumnScope.FolderGridView(
 										},
 									)
 								}
+								.combinedClickable(
+									onClick = {
+										val modifiers = windowInfo.keyboardModifiers
+										val isCtrlPressed = modifiers.isCtrlPressed || modifiers.isMetaPressed
+										viewModel.toggleSelection(file.id, isCtrlPressed)
+									},
+									onDoubleClick = {}
+								)
 						) {
 							Column(
 								Modifier.fillMaxSize().padding(8.dp)

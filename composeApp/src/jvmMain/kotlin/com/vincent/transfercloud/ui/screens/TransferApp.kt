@@ -22,18 +22,26 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.Navigator
+import cafe.adriel.voyager.transitions.SlideTransition
 import com.vincent.transfercloud.ui.component.HeaderBar
 import com.vincent.transfercloud.ui.component.SideBar
-import com.vincent.transfercloud.ui.navigation.HomeScreen
+import com.vincent.transfercloud.ui.navigation.DirectTransferReceiveScreen
+import com.vincent.transfercloud.ui.navigation.FolderDetailView
+import com.vincent.transfercloud.ui.state.AppState
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.HorizontalSplitPane
 import org.jetbrains.compose.splitpane.rememberSplitPaneState
+import org.koin.compose.koinInject
 import java.awt.Cursor
 
 @OptIn(ExperimentalSplitPaneApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun TransferApp() {
+fun TransferApp(
+	appState: AppState = koinInject<AppState>()
+) {
 	val splitterState = rememberSplitPaneState()
+	val currentTab by appState.currentTab.collectAsState()
+	val currentUser by appState.currentUser.collectAsState()
 	var isHovered by remember { mutableStateOf(false) }
 	val bgColor by animateColorAsState(
 		targetValue = if (isHovered) Color(0xFFAAAAAA) else Color(0x00000000),
@@ -75,7 +83,12 @@ fun TransferApp() {
 					elevation = CardDefaults.cardElevation(2.dp),
 					colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
 				) {
-					Navigator(HomeScreen())
+					when (currentTab) {
+						AppState.AppTab.HOME -> HomeUI()
+						AppState.AppTab.MY_DRIVE -> Navigator(FolderDetailView(currentUser?.rootFolderId!!))
+						AppState.AppTab.SHARED -> ShareScreen()
+						AppState.AppTab.TRANSFER -> Navigator(DirectTransferReceiveScreen) { SlideTransition(it) }
+					}
 				}
 			}
 

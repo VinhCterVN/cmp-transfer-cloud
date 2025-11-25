@@ -28,7 +28,7 @@ data class CreateRequest(
 	val data: String
 )
 
-// DELETE HANDLERS
+
 @Serializable
 data class DeleteRequest(
 	val resource: String,
@@ -51,7 +51,15 @@ data class DownloadRequest(
 )
 
 @Serializable
+data class MoveRequest(
+    val resource: String, 
+    val id: String,       
+    val targetParentId: String, 
+    val ownerId: String   
+)
+
+@Serializable
 enum class SocketRequestType {
-	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH, DOWNLOAD
+	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH, DOWNLOAD, MOVE, COPY
 }
 

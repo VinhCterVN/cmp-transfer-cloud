@@ -25,12 +25,20 @@ class FolderViewModel(
 	private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
 	val selectedIds = _selectedIds.asStateFlow()
 	val currentViewIndex = MutableStateFlow(FileViewIndex.GRID)
-	private val _draggedItem = MutableStateFlow("")
+	private val _draggedItem = MutableStateFlow<Pair<String, FolderObject>?>(null)
 	val draggedItem = _draggedItem.asStateFlow()
 	private val _hoveredFolderId = MutableStateFlow<String?>(null)
 	val hoveredFolderId = _hoveredFolderId.asStateFlow()
 	private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
 	val uiState = _uiState.asStateFlow()
+
+	init {
+		viewModelScope.launch {
+			appState.currentFolder.collect { newId ->
+				if (newId.isNotEmpty()) getFolderData(newId)
+			}
+		}
+	}
 
 	fun setSelectedIds(ids: Set<String>) {
 		_selectedIds.value = ids
@@ -48,24 +56,48 @@ class FolderViewModel(
 		} ?: emptySet()
 	}
 
-	fun startDragging(item: String) {
+	fun startDragging(item: Pair<String, FolderObject>) {
 		_draggedItem.value = item
 	}
 
 	fun stopDragging() {
-		_draggedItem.value = ""
+		_draggedItem.value = null
 	}
 
 	fun setHoveredFolder(folderId: String?) {
 		_hoveredFolderId.value = folderId
 	}
 
-	fun moveItem(itemToMove: FolderOutputDto, targetFolderId: String) {
-		val itemId = itemToMove.id
+	fun moveItem(targetFolderId: String) {
+		val dragged = draggedItem.value
+		sendRequest(
+			type = SocketRequestType.MOVE,
+			payload = MoveRequest(
+				resource = if (dragged!!.second == FolderObject.FOLDER) "folder" else "file",
+				id = dragged.first,
+				targetParentId = targetFolderId,
+				ownerId = currentUser.id
+			),
+			onSuccess = { res ->
+				if (dragged.second == FolderObject.FOLDER) {
+					folderData.value = folderData.value?.copy(
+						subfolders = folderData.value?.subfolders!!.filterNot { it.id == dragged.first }
+					)
+				} else {
+					folderData.value = folderData.value?.copy(
+						files = folderData.value?.files!!.filterNot { it.id == dragged.first }
+					)
+				}
+			},
+			onError = { e ->
+				println("Error moving item: $e")
+			}
+		)
 		println("Moved to $targetFolderId")
 	}
 
-	suspend fun getFolderData(folderId: String) {
+	suspend fun getFolderData(folderId: String = appState.currentFolder.value) {
+		if (folderId.isEmpty()) return;
 		_uiState.value = UIState.Loading
 		delay(50)
 		sendRequest(
@@ -97,7 +129,7 @@ class FolderViewModel(
 				"folder", json.encodeToString(
 					CreateFolderRequest(
 						currentUser.id,
-						folderName,
+						folderName.trim(),
 						parentId
 					)
 				)
@@ -164,7 +196,7 @@ class FolderViewModel(
 			payload = SearchRequest("users", "email", query),
 			onSuccess = { res ->
 				val data = json.decodeFromString<List<UserOutputDto>>(res.data!!)
-				filteredUsers.value = data
+				filteredUsers.value = data.filter { it.id != currentUser.id }
 			},
 			onError = { msg ->
 				println("Error searching users: $msg")
@@ -172,15 +204,16 @@ class FolderViewModel(
 		)
 	}
 
-	fun uploadFile(file: File?) = viewModelScope.launch {
+	fun uploadFile(file: File?, shareIds: List<String> = emptyList()) = viewModelScope.launch {
 		if (file == null) return@launch
-		println("Uploading file: $file")
+		println("Uploading file: $file with ${shareIds.size} shares")
 		val req = CreateFileRequest(
 			ownerId = currentUser.id,
 			fileName = file.name,
 			parentFolderId = appState.currentFolder.value,
 			fileSize = file.length(),
 			mimeType = file.getMimeType(),
+			shareIds = shareIds,
 			data = file.readBytes()
 		)
 
@@ -238,4 +271,8 @@ fun File.getMimeType(): String {
 		"txt" -> "text/plain"
 		else -> "application/octet-stream"
 	}
+}
+
+enum class FolderObject {
+	FOLDER, FILE
 }

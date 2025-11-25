@@ -2,6 +2,7 @@ package com.vincent.transfercloud.ui.component.dialog
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.state.UIState
+import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.MessageStyle
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
@@ -38,7 +40,10 @@ import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.onEach
+import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
+import transfercloud.composeapp.generated.resources.Res
+import transfercloud.composeapp.generated.resources.material_symbols__folder
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class, ExperimentalMaterialApi::class)
@@ -47,7 +52,7 @@ fun FileUploadDialog(
 	uploadFile: File?,
 	viewModel: FolderViewModel = koinInject<FolderViewModel>(),
 	onCancel: () -> Unit,
-	action: () -> Unit
+	action: () -> Unit = {}
 ) {
 	val options = listOf("Local" to Icons.Default.LocalBar, "Cloud" to Icons.Default.Cloud)
 	var selectedOption by remember { mutableStateOf(options[0]) }
@@ -111,11 +116,10 @@ fun FileUploadDialog(
 							verticalAlignment = Alignment.CenterVertically,
 							horizontalArrangement = Arrangement.spacedBy(8.dp)
 						) {
-							Icon(
-								if (isFile) Icons.Default.FileOpen else Icons.Default.Folder,
-								null,
-								Modifier.size(36.dp),
-								tint = MaterialTheme.colorScheme.onSurfaceVariant
+							Image(
+								painter = painterResource(if (isFile) getFileIcon(uploadFile.name) else Res.drawable.material_symbols__folder),
+								contentDescription = null,
+								modifier = Modifier.size(36.dp),
 							)
 							Text(uploadFile.name, style = MessageStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
 							Spacer(Modifier.weight(1f))
@@ -291,7 +295,13 @@ fun FileUploadDialog(
 					TextButton(onCancel) {
 						Text("Close", style = TitleLineLarge.copy(fontSize = 15.sp))
 					}
-					Button(action, shape = RoundedCornerShape(8.dp)) {
+					Button(
+						onClick = {
+							viewModel.uploadFile(uploadFile, sharedUsers)
+							action()
+						},
+						shape = RoundedCornerShape(8.dp)
+					) {
 						Text("Confirm Upload", style = TitleLineLarge.copy(fontSize = 15.sp))
 					}
 				}

@@ -6,6 +6,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -31,9 +33,13 @@ fun FolderNameDialog(
 	val currentFolder by appState.currentFolder.collectAsState()
 	var folderName by remember { mutableStateOf("") }
 	val scaffoldState = LocalBottomSheetScaffoldState.current
+	val nameFieldRequester = remember { FocusRequester() }
 
 	if (visible)
 		Dialog(onDismissRequest = { appState.isCreatingFolder.value = false }) {
+			LaunchedEffect(Unit) {
+				nameFieldRequester.requestFocus()
+			}
 			Card(
 				Modifier.fillMaxWidth(0.8f),
 				shape = RoundedCornerShape(18.dp),
@@ -53,7 +59,7 @@ fun FolderNameDialog(
 						label = { Text(label) },
 						textStyle = MessageStyle,
 						shape = RoundedCornerShape(12.dp),
-						modifier = Modifier.fillMaxWidth()
+						modifier = Modifier.fillMaxWidth().focusRequester(nameFieldRequester)
 					)
 
 					Row(

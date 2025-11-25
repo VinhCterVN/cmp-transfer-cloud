@@ -133,6 +133,7 @@ fun AppSettingsDialog(
 							modifier = Modifier.fillMaxWidth()
 						)
 						SettingButtonRow(buttons = buttons)
+						HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 					}
 					// --- GROUP 2: PRIVACY ---
 					item {

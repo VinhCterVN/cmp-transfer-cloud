@@ -63,8 +63,58 @@ class ClientHandler(
 			SocketRequestType.UPDATE -> handleUpdate(req.payload)
 			SocketRequestType.SEARCH -> handleSearch(req.payload)
 			SocketRequestType.DOWNLOAD -> handleDownload(req.payload)
+			SocketRequestType.MOVE -> handleMove(req.payload)
+			SocketRequestType.COPY -> handleCopy(req.payload)
 		}
 	}
+
+	private fun handleMove(payload: String) {
+		if (userId == null) {
+			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			return
+		}
+		try {
+			val req = json.decodeFromString<MoveRequest>(payload)
+			val ownerId = req.ownerId
+			if (ownerId != userId) {
+				send(
+					SocketResponse(
+						status = ResponseStatus.ERROR,
+						message = "Unauthorized access"
+					)
+				)
+				return
+			}
+			when (req.resource) {
+				"folder" -> FolderRepository.moveFolder(req.id, req.targetParentId, ownerId)
+				"file" -> FileRepository.moveFile(req.id, req.targetParentId, ownerId)
+				else -> {
+					send(
+						SocketResponse(
+							status = ResponseStatus.ERROR,
+							message = "Unknown resource: ${req.resource}"
+						)
+					)
+					return
+				}
+			}
+			send(
+				SocketResponse(
+					status = ResponseStatus.SUCCESS,
+					message = "${req.resource} moved successfully"
+				)
+			)
+		} catch (e: Exception) {
+			send(
+				SocketResponse(
+					status = ResponseStatus.ERROR,
+					message = "Move failed: ${e.message}"
+				)
+			)
+		}
+	}
+
+	private fun handleCopy(payload: String) {}
 
 	// AUTH HANDLERS
 	private fun handleLogin(payload: String) {
@@ -203,6 +253,25 @@ class ClientHandler(
 					)
 				}
 
+				"shared-with-me" -> {
+					val ownerId = req.ownerId ?: userId!!
+					val sharedFolders = FolderRepository.getFoldersSharedWithUser(ownerId)
+					val sharedFiles = FileRepository.getFilesSharedWithUser(ownerId)
+					val response = GetSharedDataRequest(
+						status = if (sharedFolders.isNotEmpty() || sharedFiles.isNotEmpty()) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
+						message = if (sharedFolders.isNotEmpty() || sharedFiles.isNotEmpty()) "Shared data retrieved" else "No shared data found",
+						folders = sharedFolders,
+						files = sharedFiles
+					)
+					send(
+						SocketResponse(
+							status = ResponseStatus.SUCCESS,
+							message = "Shared folders retrieved",
+							data = json.encodeToString(response)
+						)
+					)
+				}
+
 				else -> {
 					send(
 						SocketResponse(
@@ -316,6 +385,7 @@ class ClientHandler(
 						ownerId = fileReq.ownerId,
 						fileSize = fileReq.fileSize,
 						mimeType = fileReq.mimeType,
+						shareIds = fileReq.shareIds,
 						storagePath = "${fileReq.ownerId}/$encPath"
 					)
 					val response = CreateFileResponseDto(

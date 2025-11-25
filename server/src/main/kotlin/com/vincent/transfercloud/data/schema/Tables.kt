@@ -37,8 +37,7 @@ object Files : UUIDTable("files") {
 }
 
 object Shares : UUIDTable("shares") {
-	val fileId = reference("file_id", Files, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
-		.nullable()
+	val fileId = reference("file_id", Files, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE).nullable()
 	val folderId = reference("folder_id", Folders, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE).nullable()
 	val ownerId = reference("owner_id", Users, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)
 	val sharedWithUserId = reference("shared_with_user_id", Users, onUpdate = ReferenceOption.CASCADE, onDelete = ReferenceOption.CASCADE)

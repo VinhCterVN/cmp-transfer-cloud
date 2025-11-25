@@ -6,12 +6,15 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 
+@OptIn(ExperimentalSerializationApi::class)
 val json = Json {
-	ignoreUnknownKeys = true
-	encodeDefaults = true
 	isLenient = true
+	encodeDefaults = true
+	ignoreUnknownKeys = true
+	allowTrailingComma = true
 }
 val client = HttpClient(CIO) {
 	install(ContentNegotiation) {

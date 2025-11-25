@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 fun LazyListScope.folderViewSticky(
 	showSticky: Boolean,
 	count: Int,
-	onAction: () -> Unit
+	onClear: () -> Unit
 ) {
 	if (showSticky) {
 		stickyHeader {
@@ -39,7 +39,7 @@ fun LazyListScope.folderViewSticky(
 						},
 						state = rememberTooltipState()
 					) {
-						IconButton(onClick = onAction) {
+						IconButton(onClick = onClear) {
 							Icon(Icons.Default.Clear, null)
 						}
 					}
@@ -71,7 +71,7 @@ fun LazyListScope.folderViewSticky(
 						TextButton(onClick = { /* TODO: bulk actions like download/share */ }) {
 							Text("Actions")
 						}
-						TextButton(onClick = onAction) {
+						TextButton(onClick = onClear) {
 							Text("Clear")
 						}
 					}

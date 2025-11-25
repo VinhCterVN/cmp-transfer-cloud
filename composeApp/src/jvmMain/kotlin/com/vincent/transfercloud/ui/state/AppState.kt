@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class AppState {
 	val darkTheme = MutableStateFlow(false)
 	val isConnected = MutableStateFlow(false)
+	val currentTab = MutableStateFlow<AppTab>(AppTab.HOME)
 	val currentUser = MutableStateFlow<UserOutputDto?>(null)
 	val networkConfig = MutableStateFlow(NetworkConfig())
 	val isCreatingFolder = MutableStateFlow(false)
@@ -19,5 +20,9 @@ class AppState {
 	val clientSocket = MutableStateFlow<Socket?>(null)
 	val clientSocketWriteChannel = MutableStateFlow<ByteWriteChannel?>(null)
 	val clientSocketReadChannel = MutableStateFlow<ByteReadChannel?>(null)
+
+	enum class AppTab {
+		HOME, MY_DRIVE, SHARED, TRANSFER
+	}
 }
 

@@ -31,30 +31,29 @@ import org.koin.compose.koinInject
 fun HomeUI(
 	appState: AppState = koinInject<AppState>(),
 ) {
-	val navigator = LocalNavigator.currentOrThrow
+//	val navigator = LocalNavigator.currentOrThrow
 	val currentUser by appState.currentUser.collectAsState()
 	Column(
 		Modifier.fillMaxSize()
-			.pointerInput(Unit) {
-				awaitPointerEventScope {
-					var lastItem: Screen? = null
-					while (true) {
-						val event = awaitPointerEvent()
-						if (event.buttons.isBackPressed && navigator.canPop) {
-							lastItem = navigator.lastItemOrNull
-							navigator.pop()
-						} else if (event.buttons.isForwardPressed) {
-							if (lastItem != null) navigator.push(lastItem)
-						}
-					}
-				}
-			}
+//			.pointerInput(Unit) {
+//				awaitPointerEventScope {
+//					var lastItem: Screen? = null
+//					while (true) {
+//						val event = awaitPointerEvent()
+//						if (event.buttons.isBackPressed && navigator.canPop) {
+//							lastItem = navigator.lastItemOrNull
+//							navigator.pop()
+//						} else if (event.buttons.isForwardPressed) {
+//							if (lastItem != null) navigator.push(lastItem)
+//						}
+//					}
+//				}
+//			}
 			.padding(horizontal = 8.dp, vertical = 4.dp),
 		horizontalAlignment = Alignment.CenterHorizontally,
-		verticalArrangement = Arrangement.Center
+		verticalArrangement = Arrangement.SpaceEvenly
 	) {
 		Text("Welcome to TransferCloud!", style = HeadLineMedium)
-		Spacer(Modifier.height(10.dp))
 
 		HorizontalMultiBrowseCarousel(
 			state = rememberCarouselState { 20 },
@@ -77,7 +76,8 @@ fun HomeUI(
 		}
 
 		ElevatedButton({
-			navigator.push(FolderDetailView(currentUser?.rootFolderId!!))
+//			navigator.push(FolderDetailView(currentUser?.rootFolderId!!))
+			appState.currentTab.value = AppState.AppTab.MY_DRIVE
 		}) {
 			Text("Go to your Drive")
 		}

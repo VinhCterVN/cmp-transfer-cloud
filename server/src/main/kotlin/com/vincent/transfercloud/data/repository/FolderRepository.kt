@@ -11,11 +11,8 @@ import com.vincent.transfercloud.data.schema.Folders
 import com.vincent.transfercloud.data.schema.Shares
 import com.vincent.transfercloud.utils.toFileOutputDto
 import com.vincent.transfercloud.utils.toFolderOutputDto
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.time.ExperimentalTime
@@ -100,5 +97,25 @@ object FolderRepository {
 		val ownerUuid = UUID.fromString(ownerId)
 		val deletedRows = Folders.deleteWhere { (Folders.id eq folderUuid) and (Folders.ownerId eq ownerUuid) }
 		deletedRows > 0
+	}
+
+	fun getFoldersSharedWithUser(ownerId: String) = transaction {
+		val ownerUuid = UUID.fromString(ownerId)
+		val sharedFolderIds = Shares.selectAll()
+			.where { (Shares.sharedWithUserId eq ownerUuid) and (Shares.folderId.isNotNull()) }
+			.mapNotNull { it[Shares.folderId]?.value }
+
+		Folders.selectAll()
+			.where { Folders.id inList sharedFolderIds }
+			.map { it.toFolderOutputDto(getFolderBreadcrumb(it[Folders.id].value, ownerUuid)) }
+	}
+
+	fun moveFolder(id: String, targetParentId: String, ownerId: String) = transaction {
+		val folderUuid = UUID.fromString(id)
+		val targetParentUuid = UUID.fromString(targetParentId)
+		val ownerUuid = UUID.fromString(ownerId)
+		Folders.update({ (Folders.id eq folderUuid) and (Folders.ownerId eq ownerUuid) }) {
+			it[parentId] = targetParentUuid
+		}
 	}
 }

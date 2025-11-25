@@ -54,6 +54,7 @@ import com.vincent.transfercloud.ui.navigation.FolderDetailView
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
+import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.formatIsoToMonthDay
 import kotlinx.coroutines.delay
@@ -151,7 +152,7 @@ fun ColumnScope.FolderListView(
 			folderViewSticky(
 				showSticky = selectedIds.isNotEmpty(),
 				count = selectedIds.size,
-				onAction = {}
+				onClear = {}
 			)
 			if (!folderData?.subfolders.isNullOrEmpty()) {
 				item {
@@ -226,8 +227,14 @@ fun ColumnScope.FolderListView(
 
 								override fun onDrop(event: DragAndDropEvent): Boolean {
 									viewModel.setHoveredFolder(null)
-									if (viewModel.draggedItem.value.isNotEmpty()) {
-										viewModel.moveItem(folder, folder.id)
+									viewModel.draggedItem.value?.let {
+										scope.launch { bottomSheetState.snackbarHostState.showSnackbar(
+												"${if (it.second == FolderObject.FOLDER) "Folder" else "File"} has been moved to ${folder.name}.",
+												actionLabel = "OK",
+												duration = SnackbarDuration.Short,
+											)
+										}
+										viewModel.moveItem(folder.id)
 										return true
 									}
 									return false
@@ -291,7 +298,7 @@ fun ColumnScope.FolderListView(
 									scaleY = scale
 								}
 								.dragAndDropSource { offset ->
-									viewModel.startDragging(folder.id)
+									viewModel.startDragging(folder.id to FolderObject.FOLDER)
 									DragAndDropTransferData(
 										transferable = createTransferable(folder.id),
 										dragDecorationOffset = Offset.Zero,
@@ -306,7 +313,7 @@ fun ColumnScope.FolderListView(
 								}
 								.dragAndDropTarget(
 									shouldStartDragAndDrop = { event ->
-										draggedItem.isNotEmpty() && draggedItem != folder.id
+										draggedItem != null && draggedItem?.first != folder.id
 									},
 									target = dragAndDropTarget
 								)
@@ -486,9 +493,7 @@ fun ColumnScope.FolderListView(
 										val modifiers = windowInfo.keyboardModifiers
 										handleSelection(index, file.id, modifiers)
 									},
-									onDoubleClick = {
-										scope.launch { navigator.push(FolderDetailView(file.id)) }
-									}
+									onDoubleClick = {/*TODO: IMPLEMENT FILE PREVIEW*/}
 								)
 								.background(
 									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
@@ -513,7 +518,7 @@ fun ColumnScope.FolderListView(
 									scaleY = scale
 								}
 								.dragAndDropSource { offset ->
-									viewModel.startDragging(file.id)
+									viewModel.startDragging(file.id to FolderObject.FILE)
 									DragAndDropTransferData(
 										transferable = createTransferable(file.id),
 										dragDecorationOffset = Offset.Zero,

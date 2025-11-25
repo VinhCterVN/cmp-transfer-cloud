@@ -11,6 +11,14 @@ data class GetFolderContentsRequestDto(
 )
 
 @Serializable
+data class GetSharedDataRequest(
+	val status: ResponseStatus,
+	val message: String,
+	val folders: List<FolderOutputDto>,
+	val files: List<FileOutputDto>
+)
+
+@Serializable
 enum class ResponseStatus{
 	SUCCESS,
 	ERROR
