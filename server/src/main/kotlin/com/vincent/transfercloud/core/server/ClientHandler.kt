@@ -25,6 +25,9 @@ class ClientHandler(
 	private val sendChannel = socket.openWriteChannel(autoFlush = true)
 	private var userId: String? = null
 
+	init {
+		println("ClientHandler initialized for ${socket.remoteAddress}")
+	}
 	fun start() = scope.launch(Dispatchers.IO) {
 		try {
 			var line: String? = ""

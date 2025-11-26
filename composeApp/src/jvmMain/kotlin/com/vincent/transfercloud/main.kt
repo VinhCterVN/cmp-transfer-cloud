@@ -32,7 +32,7 @@ fun main() = application {
 	) {
 		Window(
 			onCloseRequest = ::exitApplication,
-			title = "Mail Client",
+			title = "Transfer Cloud",
 			state = state,
 		) {
 			CompositionLocalProvider(

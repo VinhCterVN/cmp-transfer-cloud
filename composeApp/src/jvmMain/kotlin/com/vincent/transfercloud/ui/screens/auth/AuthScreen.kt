@@ -231,6 +231,14 @@ fun AppGate(
 											}
 										}
 									}
+
+									scope.launch {
+										scaffoldState.snackbarHostState.showSnackbar(
+											"Attempting to ${AuthDestination.entries[selectedDestination].name.lowercase()}...",
+											actionLabel = "Hide",
+											duration = SnackbarDuration.Short
+										)
+									}
 								},
 								shape = RoundedCornerShape(8.dp),
 								modifier = Modifier.weight(1f),
