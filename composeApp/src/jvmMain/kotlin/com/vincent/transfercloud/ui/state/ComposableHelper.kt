@@ -8,7 +8,7 @@ fun getFileIcon(fileName: String): DrawableResource {
 	return when (extension) {
 		"jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "tiff" -> Res.drawable.mdi__image
 		"mp4", "mkv", "avi", "mov", "wmv", "flv", "webm" -> Res.drawable.mdi__file_video
-		"mp3", "wav", "flac", "aac", "ogg" -> Res.drawable.mdi__file_music
+		"mp3", "wav", "flac", "aac", "ogg", "m4a" -> Res.drawable.mdi__file_music
 		"pdf" -> Res.drawable.mdi__file_pdf_box
 		"doc", "docx", "txt", "odt", "rtf" -> Res.drawable.material_icon_theme__document
 		"apk" -> Res.drawable.material_symbols__apk_document

@@ -1,13 +1,16 @@
 package com.vincent.transfercloud.core.server
 
 import kotlinx.serialization.Serializable
+import java.time.Instant
 import java.util.UUID
+import kotlin.time.ExperimentalTime
 
 @Serializable
 data class DirectTransferDto(
 	val fromName: String,
 	val fromAvatar: String,
 	val fromId: String,
+	val fromDeviceName: String,
 	val tcpHost: String,
 	val tcpPort: Int,
 )
@@ -19,22 +22,24 @@ data class DiscoveredDevice(
 )
 
 @Serializable
-data class DirectTransferSend(
+data class DirectTransferSend @OptIn(ExperimentalTime::class) constructor(
 	val id: String = UUID.randomUUID().toString(),
 	val fromName: String,
 	val fromAvatar: String,
 	val fromId: String,
 	val toId: String,
-	val filesCount : Int,
-	var files: List<String> = emptyList()
+	val filesCount: Int,
+	var files: List<String> = emptyList(),
+	val totalSize: Long,
+	val transferTime: Long = Instant.now().epochSecond
 )
 
 @Serializable
 data class DirectTransferMeta(
-    val fromId: String,
-    val fileName: String,
-    val fileSize: Long,
-    val mimeType: String
+	val fromId: String,
+	val fileName: String,
+	val fileSize: Long,
+	val mimeType: String
 )
 
 @Serializable

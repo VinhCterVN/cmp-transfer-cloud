@@ -88,6 +88,7 @@ fun TransferApp(
 						AppState.AppTab.MY_DRIVE -> Navigator(FolderDetailView(currentUser?.rootFolderId!!))
 						AppState.AppTab.SHARED -> ShareScreen()
 						AppState.AppTab.TRANSFER -> Navigator(DirectTransferReceiveScreen) { SlideTransition(it) }
+						AppState.AppTab.TRASH -> {}
 					}
 				}
 			}

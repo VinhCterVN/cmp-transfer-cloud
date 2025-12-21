@@ -3,6 +3,7 @@ package com.vincent.transfercloud.ui.component
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
@@ -27,6 +28,7 @@ import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.cloud
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HeaderBar(
 	appState: AppState = koinInject<AppState>(),
@@ -70,15 +72,31 @@ fun HeaderBar(
 
 		Spacer(Modifier.weight(1f))
 
-		IconButton(onClick = { appState.darkTheme.value = !appState.darkTheme.value }) {
-			Icon(if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+		TooltipBox(
+			state = rememberTooltipState(),
+			positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+			tooltip = { PlainTooltip { Text("Theme Switcher", color = MaterialTheme.colorScheme.surface) } },
+		) {
+			IconButton(onClick = { appState.darkTheme.value = !appState.darkTheme.value }) {
+				Icon(
+					if (isDark) Icons.Default.DarkMode else Icons.Default.LightMode,
+					null,
+					tint = MaterialTheme.colorScheme.onSurfaceVariant
+				)
+			}
 		}
 
 		Box(Modifier.size(50.dp)) {
-			ConnectivityAvatar(
-				imageUrl = currentUser!!.avatarUrl!!,
-				onClick = { expanded = !expanded }
-			)
+			TooltipBox(
+				state = rememberTooltipState(),
+				positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+				tooltip = { PlainTooltip { Text("Theme Switcher", color = MaterialTheme.colorScheme.surface) } },
+			) {
+				ConnectivityAvatar(
+					imageUrl = currentUser!!.avatarUrl!!,
+					onClick = { expanded = !expanded }
+				)
+			}
 			DropdownMenu(
 				expanded = expanded, { expanded = false },
 				offset = DpOffset(x = (-40).dp, y = 0.dp),
@@ -87,20 +105,20 @@ fun HeaderBar(
 				shape = RoundedCornerShape(12.dp)
 			) {
 				DropdownMenuItem(
-					text = { Text(currentUser?.fullName ?: "Guest") },
+					text = { Text(currentUser?.fullName ?: "Guest", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.Default.Person, null) },
 					onClick = {},
 					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 				DropdownMenuItem(
-					text = { Text("Settings") },
+					text = { Text("Settings", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.Default.Settings, null) },
 					onClick = { showSettings = true },
 					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
 				)
 				HorizontalDivider()
 				DropdownMenuItem(
-					text = { Text("Logout") },
+					text = { Text("Logout", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
 					onClick = { viewModel.logout() },
 					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)

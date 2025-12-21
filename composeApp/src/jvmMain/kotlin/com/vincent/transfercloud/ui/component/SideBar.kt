@@ -10,10 +10,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CompareArrows
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.RestoreFromTrash
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.RestoreFromTrash
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Home
@@ -63,14 +65,21 @@ fun SideBar(
 			unselectedIcon = Icons.Default.SwapHoriz,
 			tab = AppState.AppTab.TRANSFER,
 			onClick = { tab -> appState.currentTab.value = tab }
-		)
+		),
+		SideBarOption(
+			"Recycle Bin",
+			selectedIcon = Icons.Filled.RestoreFromTrash,
+			unselectedIcon = Icons.Outlined.RestoreFromTrash,
+			tab = AppState.AppTab.TRASH,
+			onClick = { tab -> appState.currentTab.value = tab }
+		),
 	)
 
 	Column(
 		verticalArrangement = Arrangement.spacedBy(4.dp)
 	) {
 		ExtendedFloatingActionButton(
-			onClick = { appState.isCreatingFolder.value = true },
+			onClick = { if (currentTab == AppState.AppTab.MY_DRIVE) appState.isCreatingFolder.value = true },
 			icon = { Icon(Icons.Filled.Add, null) },
 			text = { Text("New") }
 		)

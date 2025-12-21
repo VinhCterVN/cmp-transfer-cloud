@@ -62,6 +62,7 @@ class DirectTransferReceiveVM(
 							fromName = it.fullName,
 							fromAvatar = it.avatarUrl!!,
 							fromId = it.id,
+							fromDeviceName = System.getProperty("os.name"),
 							tcpHost = InetAddress.getLocalHost().hostAddress.toString(),
 							tcpPort = transferSocket!!.localAddress.port(),
 						)

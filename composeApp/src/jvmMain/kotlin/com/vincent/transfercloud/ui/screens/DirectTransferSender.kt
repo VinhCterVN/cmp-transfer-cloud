@@ -2,14 +2,11 @@ package com.vincent.transfercloud.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,10 +14,10 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -33,9 +30,11 @@ import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -43,12 +42,14 @@ import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
+import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
+import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.DirectTransferSendVM
-import io.github.alexzhirkevich.compottie.LottieCompositionSpec
-import io.github.alexzhirkevich.compottie.rememberLottieComposition
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -68,13 +69,22 @@ fun DirectTransferSendUI(
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val devices by viewModel.availableReceivers.collectAsState()
 	val uploadingFiles by viewModel.uploadingFiles.collectAsState()
+	val isUploading by viewModel.isUploading.collectAsState()
+	val sendingProgress by viewModel.sendingProgress.collectAsState()
+	val bytesProgress by viewModel.bytesProgress.collectAsState()
 	val expanded by rememberSaveable { mutableStateOf(true) }
 	var isDragging by remember { mutableStateOf(false) }
-	val composition by rememberLottieComposition {
-		LottieCompositionSpec.JsonString(
-			Res.readBytes("files/empty_state.json").decodeToString()
-		)
+	val progressPercentage = remember(bytesProgress) {
+		val (sent, total) = bytesProgress
+		if (total > 0L) sent.toFloat() / total.toFloat() else 0f
 	}
+	val animatedProgress by animateFloatAsState(
+		targetValue = progressPercentage,
+		animationSpec = tween(
+			durationMillis = 300,
+			easing = FastOutSlowInEasing
+		)
+	)
 	val surfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
 	val emptyIconColor by infiniteTransition.animateColor(
 		initialValue = surfaceVariant,
@@ -104,16 +114,17 @@ fun DirectTransferSendUI(
 				val transferable = event.awtTransferable
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
-					val pending = files.first() as File
-					if (pending.length() > 10 * 1024 * 1024) {
+					val oversizedFiles = files.filter {
+						(it as File).length() > 1L * 1024L * 1024L * 1024L
+					}
+					if (oversizedFiles.isNotEmpty()) {
 						scope.launch {
 							scaffoldState.snackbarHostState.showSnackbar(
-								"File size exceeds 10MB limit.",
+								"File size exceeds 1GB limit.",
 								actionLabel = "Hide",
 								duration = SnackbarDuration.Short
 							)
 						}
-						return false
 					}
 					viewModel.addTransferFiles(files.map { it as File })
 				}
@@ -121,6 +132,17 @@ fun DirectTransferSendUI(
 			}
 		}
 	}
+	val fileOpen = rememberFilePickerLauncher(mode = FileKitMode.Multiple()) { platformFiles ->
+		val files = platformFiles?.map { it.file }
+		files?.let { viewModel.addTransferFiles(it) }
+	}
+	val chooseIcons = listOf(
+		FileSelectIcon(
+			icon = Icons.Filled.FilePresent,
+			text = "File",
+			onClick = { fileOpen.launch() }
+		),
+	)
 
 	Box(
 		Modifier.fillMaxSize()
@@ -164,6 +186,10 @@ fun DirectTransferSendUI(
 				}
 
 				item {
+					Spacer(Modifier.height(25.dp))
+				}
+
+				item {
 					Card(
 						modifier = Modifier.fillMaxWidth(),
 						shape = RoundedCornerShape(12.dp),
@@ -171,68 +197,142 @@ fun DirectTransferSendUI(
 							defaultElevation = 4.dp,
 							hoveredElevation = 2.dp
 						),
+						colors = CardDefaults.cardColors()
 					) {
 						Column(
-							Modifier.fillMaxWidth().padding(16.dp).height(128.dp),
-							verticalArrangement = Arrangement.spacedBy(8.dp)
+							Modifier.fillMaxWidth()
+								.background(MaterialTheme.colorScheme.surfaceContainerLow.copy(0.4f))
+								.padding(16.dp).wrapContentHeight(),
+							verticalArrangement = Arrangement.SpaceBetween
 						) {
-							if (uploadingFiles.isEmpty()) Text(
-								"There is no uploading file.",
-								color = MaterialTheme.colorScheme.onSurfaceVariant,
-								style = TitleLineLarge.copy(fontWeight = FontWeight.W500)
-							)
-							else {
+							if (uploadingFiles.isEmpty()) {
 								Text(
-									"Uploading Files:",
+									"There is no uploading file.",
 									color = MaterialTheme.colorScheme.onSurfaceVariant,
-									style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+									style = TitleLineLarge.copy(fontWeight = FontWeight.W500)
 								)
+								Spacer(Modifier.height(10.dp))
+								LazyRow(
+									horizontalArrangement = Arrangement.spacedBy(8.dp)
+								) {
+									items(chooseIcons) { item ->
+										Card(
+											modifier = Modifier.padding(4.dp),
+											shape = RoundedCornerShape(8.dp),
+											elevation = CardDefaults.cardElevation(4.dp),
+											onClick = item.onClick
+										) {
+											Column(
+												Modifier.background(MaterialTheme.colorScheme.primaryContainer.copy(0.85f))
+													.padding(horizontal = 24.dp, vertical = 12.dp),
+												horizontalAlignment = Alignment.CenterHorizontally,
+												verticalArrangement = Arrangement.spacedBy(8.dp)
+											) {
+												Icon(item.icon, null, Modifier.size(36.dp))
+												Text(item.text, style = LabelLineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+											}
+										}
+									}
+								}
+
+							} else {
+								Row(
+									Modifier.fillMaxWidth(),
+									horizontalArrangement = Arrangement.SpaceBetween,
+									verticalAlignment = Alignment.CenterVertically
+								) {
+									Text(
+										"Uploading Files:",
+										color = MaterialTheme.colorScheme.onSurfaceVariant,
+										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+									)
+
+									Text(
+										"Selected ${uploadingFiles.size} files",
+										color = MaterialTheme.colorScheme.primary,
+										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+									)
+									val totalSize = uploadingFiles.sumOf { it.length() }
+									Text(
+										"Total ${
+											if (totalSize < 1024L) "$totalSize B"
+											else if (totalSize < 1024L * 1024L) "${totalSize / 1024L} KB"
+											else if (totalSize < 1024L * 1024L * 1024L) "${totalSize / (1024L * 1024L)} MB"
+											else "${totalSize / (1024L * 1024L * 1024L)} GB"
+										}",
+										color = MaterialTheme.colorScheme.primary,
+										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+									)
+								}
 								LazyRow(
 									horizontalArrangement = Arrangement.spacedBy(8.dp),
 									modifier = Modifier.padding(top = 8.dp)
 								) {
 									items(uploadingFiles) { file ->
-										Box(
-											modifier = Modifier
-												.height(100.dp)
-												.clip(RoundedCornerShape(8.dp))
+										Column(
+											Modifier.widthIn(max = 100.dp)
 										) {
-											if (file.isImage()) {
-												AsyncImage(
-													model = file.absolutePath,
-													contentDescription = null,
-													contentScale = ContentScale.Crop,
-													modifier = Modifier.fillMaxSize()
-												)
-											} else {
-												// Icon cho file không phải hình
-												Box(
-													Modifier
-														.fillMaxSize()
-														.background(Color.Gray.copy(alpha = 0.4f))
+											Box(
+												modifier = Modifier
+													.heightIn(max = 100.dp)
+													.clip(RoundedCornerShape(8.dp))
+											) {
+												if (file.isImage()) {
+													AsyncImage(
+														model = file.absolutePath,
+														contentDescription = null,
+														contentScale = ContentScale.Crop,
+														modifier = Modifier.fillMaxSize()
+													)
+												} else {
+													// Icon cho file không phải hình
+													Box(
+														Modifier.fillMaxSize().background(Color.Gray.copy(alpha = 0.05f))
+													) {
+														Icon(
+//															imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+															painterResource(getFileIcon(file.name)),
+															contentDescription = null,
+															modifier = Modifier
+																.fillMaxSize(0.75f)
+																.aspectRatio(1f)
+																.align(Alignment.Center),
+															tint = Color.Unspecified
+														)
+													}
+												}
+
+												IconButton(
+													onClick = { viewModel.removeTransferFile(file) },
+													modifier = Modifier
+														.size(16.dp)
+														.align(Alignment.TopEnd)
 												) {
 													Icon(
-														imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-														contentDescription = null,
-														modifier = Modifier
-															.aspectRatio(1f)
-															.align(Alignment.Center),
-														tint = Color.White
+														imageVector = Icons.Default.Close,
+														contentDescription = "Remove",
+														modifier = Modifier.size(12.dp)
 													)
 												}
 											}
-
-											IconButton(
-												onClick = { viewModel.removeTransferFile(file) },
-												modifier = Modifier
-													.size(16.dp)
-													.align(Alignment.TopEnd)
-											) {
-												Icon(
-													imageVector = Icons.Default.Close,
-													contentDescription = "Remove",
-													modifier = Modifier.size(12.dp)
-												)
+											Text(
+												text = file.name,
+												maxLines = 1,
+												fontSize = 12.sp,
+												overflow = TextOverflow.Ellipsis,
+												modifier = Modifier.basicMarquee()
+											)
+										}
+									}
+									item {
+										Box(
+											modifier = Modifier
+												.height(100.dp)
+												.clip(RoundedCornerShape(8.dp)),
+											contentAlignment = Alignment.Center
+										) {
+											IconButton(onClick = { fileOpen.launch() }) {
+												Icon(Icons.Default.Add, null)
 											}
 										}
 									}
@@ -276,27 +376,83 @@ fun DirectTransferSendUI(
 							hoveredElevation = 2.dp
 						),
 						onClick = {
-							if (uploadingFiles.isEmpty()) scope.launch {
-								scaffoldState.snackbarHostState.showSnackbar(
-									"Please add files to send first.",
-									actionLabel = "OK",
-									duration = SnackbarDuration.Short
-								)
-							} else viewModel.transferTo(device)
+							scope.launch {
+								if (isUploading) {
+									scaffoldState.snackbarHostState.showSnackbar(
+										"Currently sending files. Please wait until the current transfer is complete.",
+										actionLabel = "OK",
+										duration = SnackbarDuration.Short
+									)
+									return@launch
+								}
+								if (uploadingFiles.isEmpty())
+									scaffoldState.snackbarHostState.showSnackbar(
+										"Please add files to send first.",
+										actionLabel = "OK",
+										duration = SnackbarDuration.Short
+									)
+								else {
+									viewModel.transferTo(device).join()
+									scaffoldState.snackbarHostState.showSnackbar(
+										"Sent to ${device.fromName}",
+										actionLabel = "OK",
+										duration = SnackbarDuration.Short
+									)
+
+								}
+							}
 						}
 					) {
-						Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-							AsyncImage(
-								model = device.fromAvatar,
-								contentDescription = "Device Avatar",
-								contentScale = ContentScale.Crop,
-								modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
-								fallback = painterResource(Res.drawable.compose_multiplatform)
-							)
+						Column {
+							Row(Modifier.fillMaxSize().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+								AsyncImage(
+									model = device.fromAvatar,
+									contentDescription = "Device Avatar",
+									contentScale = ContentScale.Crop,
+									modifier = Modifier.size(64.dp).clip(RoundedCornerShape(8.dp)),
+									fallback = painterResource(Res.drawable.compose_multiplatform)
+								)
+								Column((Modifier.fillMaxHeight())) {
+									Text(
+										device.fromName,
+										style = TitleLineBig.copy(fontSize = 17.sp),
+										color = MaterialTheme.colorScheme.onSurface
+									)
+									Text(
+										device.tcpHost,
+										style = TitleLineLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.W400),
+										color = MaterialTheme.colorScheme.onSurface
+									)
+									Text(device.fromDeviceName, color = MaterialTheme.colorScheme.onSurface)
+								}
+								Spacer(Modifier.weight(1f))
 
-							Column((Modifier.fillMaxHeight())) {
-								Text(device.fromName, style = TitleLineBig.copy(fontSize = 17.sp))
-								Text(device.tcpHost, style = TitleLineLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.W500))
+								Column(Modifier.align(Alignment.CenterVertically), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+									if (!isUploading) {
+										Text("Tap to send", style = TitleLineBig, color = MaterialTheme.colorScheme.primary)
+									} else {
+										// 2 Texts for files and bytes
+										Text(
+											"Sending ${sendingProgress.first + 1} / ${sendingProgress.second} files",
+											style = TitleLineLarge.copy(fontSize = 14.sp),
+											color = MaterialTheme.colorScheme.onSurfaceVariant
+										)
+										Text(
+											"${(progressPercentage * 100).toInt()}% (${bytesProgress.first / (1024 * 1024)} / ${bytesProgress.second / (1024 * 1024)} MB)",
+											style = TitleLineLarge.copy(fontSize = 14.sp),
+											color = MaterialTheme.colorScheme.onSurfaceVariant
+										)
+									}
+								}
+							}
+							if (isUploading) {
+								LinearProgressIndicator(
+									progress = { animatedProgress },
+									modifier = Modifier
+										.fillMaxWidth()
+										.height(4.dp)
+										.clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
+								)
 							}
 						}
 					}
@@ -312,7 +468,7 @@ fun DirectTransferSendUI(
 				TooltipBox(
 					state = rememberTooltipState(),
 					positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
-					tooltip = { PlainTooltip { Text("Clear selected") } },
+					tooltip = { PlainTooltip { Text("Clear selected", color = MaterialTheme.colorScheme.surface) } },
 				) {
 					FilledIconButton(
 						modifier = Modifier.width(64.dp),
@@ -326,13 +482,19 @@ fun DirectTransferSendUI(
 	}
 }
 
+data class FileSelectIcon(
+	val icon: ImageVector,
+	val text: String,
+	val onClick: () -> Unit
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LeadingContent(navigator: Navigator) {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { if (navigator.canPop) navigator.pop() }) {
@@ -342,7 +504,7 @@ private fun LeadingContent(navigator: Navigator) {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {
@@ -357,7 +519,7 @@ private fun TrailingContent() {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {
@@ -367,7 +529,7 @@ private fun TrailingContent() {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {

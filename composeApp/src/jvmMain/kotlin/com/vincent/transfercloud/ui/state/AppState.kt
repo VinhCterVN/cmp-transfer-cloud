@@ -22,7 +22,7 @@ class AppState {
 	val clientSocketReadChannel = MutableStateFlow<ByteReadChannel?>(null)
 
 	enum class AppTab {
-		HOME, MY_DRIVE, SHARED, TRANSFER
+		HOME, MY_DRIVE, SHARED, TRANSFER, TRASH
 	}
 }
 

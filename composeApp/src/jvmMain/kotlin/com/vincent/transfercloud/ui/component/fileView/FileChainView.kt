@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -44,7 +45,20 @@ fun FileChainView(
 	val chain by appState.breadcrumb.collectAsState()
 	val viewIndex by viewModel.currentViewIndex.collectAsState()
 	val draggedItem by viewModel.draggedItem.collectAsState()
-	val options = listOf(Icons.AutoMirrored.Filled.List, Icons.Default.GridView)
+	val options = listOf(
+		FolderViewOption(
+			icon = Icons.AutoMirrored.Default.List,
+			selectedIcon = Icons.AutoMirrored.Filled.List,
+			selected = { viewIndex == FileViewIndex.LIST },
+			onClick = { viewModel.currentViewIndex.value = FileViewIndex.LIST }
+		),
+		FolderViewOption(
+			icon = Icons.Default.GridView,
+			selectedIcon = Icons.Filled.GridView,
+			selected = { viewIndex == FileViewIndex.GRID },
+			onClick = { viewModel.currentViewIndex.value = FileViewIndex.GRID }
+		),
+	)
 
 	Row(
 		Modifier.fillMaxWidth().padding(4.dp),
@@ -130,9 +144,9 @@ fun FileChainView(
 		SingleChoiceSegmentedButtonRow {
 			options.forEachIndexed { index, icon ->
 				SegmentedButton(
-					onClick = { viewModel.currentViewIndex.value = if (index > 0) FileViewIndex.GRID else FileViewIndex.LIST },
-					selected = viewIndex == if (index > 0) FileViewIndex.GRID else FileViewIndex.LIST,
-					label = { Icon(icon, null) },
+					onClick = icon.onClick,
+					selected = icon.selected(),
+					label = { Icon(if (icon.selected()) icon.selectedIcon else icon.icon, null) },
 					colors = SegmentedButtonDefaults.colors(
 						activeContainerColor = MaterialTheme.colorScheme.primaryContainer
 					),
@@ -145,3 +159,10 @@ fun FileChainView(
 		}
 	}
 }
+
+data class FolderViewOption(
+	val icon: ImageVector,
+	val selectedIcon: ImageVector,
+	val selected: () -> Boolean = { false },
+	val onClick: () -> Unit
+)

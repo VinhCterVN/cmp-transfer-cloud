@@ -54,8 +54,6 @@ kotlin {
 			implementation(compose.desktop.currentOs)
 			implementation(libs.kotlinx.coroutinesSwing)
 			implementation(libs.splitpane.desktop)
-//			implementation(libs.slf4j.simple)
-			implementation(libs.logback.classic)
 		}
 	}
 }
@@ -69,14 +67,14 @@ compose.desktop {
 	application {
 		mainClass = "com.vincent.transfercloud.MainKt"
 
-		buildTypes.release.proguard {
-			isEnabled.set(false)
-		}
-
 		nativeDistributions {
 			targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
 			packageName = "com.vincent.transfercloud"
 			packageVersion = "1.0.0"
+
+			buildTypes.release.proguard {
+				configurationFiles.from(project.file("compose-desktop.pro"))
+			}
 		}
 	}
 }

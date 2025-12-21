@@ -74,6 +74,7 @@ fun FolderUI(
 	val isCreatingFolder by appState.isCreatingFolder.collectAsState()
 	val gridState = rememberLazyGridState()
 	val listState = rememberLazyListState()
+	val dynamicState = rememberLazyListState()
 	var showTargetBorder by remember { mutableStateOf(false) }
 	var uploadingFile by remember { mutableStateOf<File?>(null) }
 	val draggedItem by viewModel.draggedItem.collectAsState()
@@ -244,13 +245,8 @@ fun FolderUI(
 							modifier = Modifier.fillMaxSize(),
 						) {
 							when (viewIndex) {
-								FileViewIndex.LIST -> {
-									FolderListView(listState)
-								}
-
-								FileViewIndex.GRID -> {
-									FolderGridView(gridState)
-								}
+								FileViewIndex.LIST -> FolderListView(listState)
+								FileViewIndex.GRID -> FolderGridView(gridState)
 							}
 						}
 						Box(

@@ -36,7 +36,6 @@ open class BaseSocketViewModel(
 				onError("Empty response from server")
 				return@launch
 			}
-			println("Received: $line")
 			val res = json.decodeFromString<SocketResponse>(line)
 
 			if (res.status == ResponseStatus.SUCCESS) {

@@ -8,18 +8,18 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import com.vincent.transfercloud.core.server.DirectTransferSend
+import com.vincent.transfercloud.ui.component.dialog.ReceiveDialog
 import com.vincent.transfercloud.ui.navigation.DirectTransferSendScreen
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
@@ -46,6 +46,7 @@ fun DirectTransferUI(
 			Res.readBytes("files/transfer.json").decodeToString()
 		)
 	}
+	var receiveDialogShow by remember { mutableStateOf(false) }
 
 	Box(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 24.dp).background(MaterialTheme.colorScheme.surface)) {
 		LazyColumn(
@@ -67,7 +68,7 @@ fun DirectTransferUI(
 						iterations = Compottie.IterateForever
 					),
 					contentDescription = null,
-					modifier = Modifier.fillMaxWidth(0.66f).aspectRatio(1f)
+					modifier = Modifier.widthIn(max = 500.dp, min = 100.dp).aspectRatio(1f)
 				)
 			}
 		}
@@ -75,12 +76,12 @@ fun DirectTransferUI(
 			modifier = Modifier.align(Alignment.BottomCenter),
 			expanded = expanded,
 			leadingContent = { LeadingContent() },
-			trailingContent = { TrailingContent(receivedData) },
+			trailingContent = { TrailingContent(receivedData, { receiveDialogShow = true }) },
 			content = {
 				TooltipBox(
 					state = rememberTooltipState(),
 					positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
-					tooltip = { PlainTooltip { Text("Clear selected") } },
+					tooltip = { PlainTooltip { Text("Clear selected", color = MaterialTheme.colorScheme.surface) } },
 				) {
 					FilledIconButton(
 						modifier = Modifier.width(64.dp),
@@ -92,6 +93,7 @@ fun DirectTransferUI(
 			},
 		)
 	}
+	ReceiveDialog(receiveDialogShow, { receiveDialogShow = false })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,7 +102,7 @@ private fun LeadingContent() {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {
@@ -110,7 +112,7 @@ private fun LeadingContent() {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {
@@ -122,21 +124,22 @@ private fun LeadingContent() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TrailingContent(
-	data: Map<String, DirectTransferSend>
+	data: Map<String, DirectTransferSend>,
+	onHistoryClick: () -> Unit,
 ) {
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		Box(contentAlignment = Alignment.Center) {
-			IconButton(onClick = { /* doSomething() */ }) {
+			IconButton(onClick = onHistoryClick, modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)) {
 				Icon(Icons.Filled.History, contentDescription = "History")
 			}
 			if (data.isNotEmpty()) {
 				Badge(
-					containerColor = Color.Red,
+					containerColor = Color.Red.copy(0.85f),
 					contentColor = Color.White,
 					modifier = Modifier
 						.align(Alignment.TopEnd)
@@ -150,7 +153,7 @@ private fun TrailingContent(
 	TooltipBox(
 		positionProvider =
 			TooltipDefaults.rememberTooltipPositionProvider(),
-		tooltip = { PlainTooltip { Text("Localized description") } },
+		tooltip = { PlainTooltip { Text("Localized description", color = MaterialTheme.colorScheme.surface) } },
 		state = rememberTooltipState(),
 	) {
 		IconButton(onClick = { /* doSomething() */ }) {

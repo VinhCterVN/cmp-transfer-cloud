@@ -33,6 +33,12 @@ class DirectTransferSendVM(
 	val availableReceivers: StateFlow<List<DirectTransferDto>> = _receiversMap
 		.map { it.values.map { device -> device.info }.sortedBy { e -> e.fromName } }
 		.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+	private val _isUploading = MutableStateFlow(false)
+	val isUploading = _isUploading.asStateFlow()
+	private val _sendingProgress = MutableStateFlow(0 to 0)
+	val sendingProgress = _sendingProgress.asStateFlow()
+	private val _bytesProgress = MutableStateFlow(0L to 0L)
+	val bytesProgress = _bytesProgress.asStateFlow()
 
 	init {
 		startDiscovery()
@@ -75,7 +81,7 @@ class DirectTransferSendVM(
 			while (isActive) {
 				delay(5000)
 				val now = System.currentTimeMillis()
-				val timeoutThreshold = 5000L // 10 giây
+				val timeoutThreshold = 5000L
 				_receiversMap.update { currentMap ->
 					currentMap.filterValues { device ->
 						(now - device.lastSeen) < timeoutThreshold
@@ -87,6 +93,7 @@ class DirectTransferSendVM(
 
 	fun transferTo(device: DirectTransferDto) = viewModelScope.launch {
 		try {
+			_isUploading.emit(true)
 			val socket = aSocket(selectorManager).tcp().connect(device.tcpHost, device.tcpPort)
 			val writeChannel = socket.openWriteChannel(autoFlush = true)
 			val dto = appState.currentUser.value?.let {
@@ -96,12 +103,19 @@ class DirectTransferSendVM(
 					fromId = it.id,
 					toId = device.fromId,
 					filesCount = _uploadingFiles.value.size,
+					totalSize = _uploadingFiles.value.sumOf { file -> file.length() }
 				)
 			}
 			val payload = json.encodeToString(dto)
 			writeChannel.writeStringUtf8("$payload\n")
+			val totalFiles = _uploadingFiles.value.size
+			val totalBytes = _uploadingFiles.value.sumOf { it.length() }
+			var sentBytes = 0L
 
-			repeat(_uploadingFiles.value.size) { index ->
+			_sendingProgress.emit(0 to totalFiles)
+			_bytesProgress.emit(0L to totalBytes)
+
+			repeat(totalFiles) { index ->
 				val file = _uploadingFiles.value[index]
 				val meta = DirectTransferMeta(
 					fromId = dto!!.fromId,
@@ -113,18 +127,35 @@ class DirectTransferSendVM(
 				writeChannel.writeStringUtf8("$jsonLine\n")
 				val fileInputChannel = file.readChannel()
 				try {
-					fileInputChannel.copyTo(writeChannel, limit = meta.fileSize)
+					val bufferSize = 8192
+					val buffer = ByteArray(bufferSize)
+					var bytesRead: Int
+					var fileSentBytes = 0L
+
+					while (fileInputChannel.readAvailable(buffer, 0, bufferSize).also { bytesRead = it } > 0) {
+						writeChannel.writeFully(buffer, 0, bytesRead)
+						fileSentBytes += bytesRead
+						sentBytes += bytesRead
+
+						_bytesProgress.emit(sentBytes to totalBytes)
+					}
+					delay(300)
+					_sendingProgress.emit((index + 1) to totalFiles)
+					println("Sent file: ${file.name} (${file.length()} bytes)")
 				} finally {
 					fileInputChannel.cancel()
 				}
 			}
 
-			println("Finished sending ${_uploadingFiles.value.size} files to ${device.tcpHost}:${device.tcpPort}")
-
+			println("Finished sending $totalFiles files ($totalBytes bytes) to ${device.tcpHost}:${device.tcpPort}")
+			_sendingProgress.emit(0 to 0)
+			_bytesProgress.emit(0L to 0L)
+			_isUploading.emit(false)
 			writeChannel.cancel(IOException())
 			socket.close()
 		} catch (e: Exception) {
 			println("Error transferring files: ${e.javaClass.name} ${e.message}")
+			_isUploading.emit(false)
 		}
 	}
 
@@ -154,5 +185,4 @@ class DirectTransferSendVM(
 		discoverySocket?.close()
 		selectorManager.close()
 	}
-
 }
