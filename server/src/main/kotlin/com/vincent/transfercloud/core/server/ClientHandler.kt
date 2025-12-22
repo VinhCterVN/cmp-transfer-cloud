@@ -270,6 +270,46 @@ class ClientHandler(
 					)
 				}
 
+				"file-shared-info" -> {
+					if (req.id == null) {
+						send(SocketResponse(ResponseStatus.ERROR, "File ID required"))
+						return
+					}
+					val shares = FileRepository.getFileSharedInfo(req.id!!, req.ownerId!!)
+					val response = FileSharesInfoDto(
+						fileId = req.id!!,
+						ownerId = req.ownerId!!,
+						shares = shares
+					)
+					send(
+						SocketResponse(
+							status = ResponseStatus.SUCCESS,
+							message = "File shared info retrieved",
+							data = json.encodeToString(response)
+						)
+					)
+				}
+
+				"folder-shared-info" -> {
+					if (req.id == null) {
+						send(SocketResponse(ResponseStatus.ERROR, "Folder ID required"))
+						return
+					}
+					val shares = FolderRepository.getFolderSharedInfo(req.id!!, req.ownerId!!)
+					val response = FolderSharesInfoDto(
+						folderId = req.id!!,
+						ownerId = req.ownerId!!,
+						shares = shares
+					)
+					send(
+						SocketResponse(
+							status = ResponseStatus.SUCCESS,
+							message = "Folder shared info retrieved",
+							data = json.encodeToString(response)
+						)
+					)
+				}
+
 				"file-thumbnail" -> {
 					if (req.id == null) {
 						send(SocketResponse(ResponseStatus.ERROR, "File ID required"))

@@ -2,14 +2,15 @@
 
 package com.vincent.transfercloud.data.repository
 
-import com.vincent.transfercloud.core.server.createFileThumbnailBytes
 import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.FolderOutputDto
 import com.vincent.transfercloud.data.dto.FolderWithContentsDto
+import com.vincent.transfercloud.data.dto.ShareMetadata
 import com.vincent.transfercloud.data.enum.SharePermission
 import com.vincent.transfercloud.data.schema.Files
 import com.vincent.transfercloud.data.schema.Folders
 import com.vincent.transfercloud.data.schema.Shares
+import com.vincent.transfercloud.data.schema.Users
 import com.vincent.transfercloud.helper.getFileHasThumbnail
 import com.vincent.transfercloud.utils.toFileOutputDto
 import com.vincent.transfercloud.utils.toFolderOutputDto
@@ -119,5 +120,23 @@ object FolderRepository {
 		Folders.update({ (Folders.id eq folderUuid) and (Folders.ownerId eq ownerUuid) }) {
 			it[parentId] = targetParentUuid
 		}
+	}
+
+	fun getFolderSharedInfo(folderId: String, ownerId: String) = transaction {
+		val folderUuid = UUID.fromString(folderId)
+		val ownerUuid = UUID.fromString(ownerId)
+		Shares.selectAll()
+			.where { (Shares.folderId eq folderUuid) and (Shares.ownerId eq ownerUuid) }
+			.map {
+				val sharedWithUserEmail = Users.selectAll()
+					.where { Users.id eq it[Shares.sharedWithUserId] }
+					.singleOrNull()?.get(Users.email) ?: ""
+				ShareMetadata(
+					sharedWithUserId = it[Shares.sharedWithUserId].toString(),
+					sharedWithUserEmail = sharedWithUserEmail,
+					permission = it[Shares.permission],
+					sharedAt = it[Shares.createdAt].toString()
+				)
+			}
 	}
 }

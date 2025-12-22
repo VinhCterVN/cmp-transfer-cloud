@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.max
 import androidx.compose.ui.unit.sp
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.theme.LabelLineSmall
+import com.vincent.transfercloud.utils.cursorHand
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -118,7 +119,7 @@ fun SideBar(
 				colors = NavigationDrawerItemDefaults.colors(
 					selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(0.75f)
 				),
-				modifier = Modifier.height(35.dp)
+				modifier = Modifier.height(35.dp).cursorHand()
 			)
 		}
 	}

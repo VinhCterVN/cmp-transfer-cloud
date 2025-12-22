@@ -11,7 +11,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.LocalBar
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,8 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
@@ -37,6 +38,7 @@ import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.MessageStyle
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import com.vincent.transfercloud.utils.cursorHand
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.onEach
@@ -194,7 +196,7 @@ fun FileUploadDialog(
 									if (shareEmail.isNotEmpty()) {
 										IconButton(
 											onClick = { shareEmail = ""; expanded = false },
-											modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+											modifier = Modifier.cursorHand()
 										) {
 											Icon(
 												imageVector = Icons.Default.Close,

@@ -15,10 +15,8 @@ import androidx.compose.foundation.lazy.grid.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,13 +54,13 @@ import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import com.vincent.transfercloud.utils.cursorHand
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.empty_state_empty_folder
-import transfercloud.composeapp.generated.resources.mdi__file_video
 import java.awt.datatransfer.StringSelection
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -109,67 +107,7 @@ fun ColumnScope.FolderGridView(
 			columns = GridCells.Adaptive(minSize = 250.dp),
 			contentPadding = PaddingValues(8.dp),
 		) {
-			if (selectedIds.isNotEmpty()) {
-				stickyHeader {
-					Surface(
-						tonalElevation = 2.dp,
-						shadowElevation = 2.dp,
-						modifier = Modifier
-							.fillMaxWidth()
-							.clip(CircleShape)
-					) {
-						Row(
-							modifier = Modifier.fillMaxSize(),
-							verticalAlignment = Alignment.CenterVertically,
-							horizontalArrangement = Arrangement.spacedBy(4.dp)
-						) {
-							TooltipBox(
-								positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
-								tooltip = {
-									PlainTooltip { Text("Clear selected") }
-								},
-								state = rememberTooltipState()
-							) {
-								IconButton(onClick = { viewModel.setSelectedIds(emptySet()) }) {
-									Icon(Icons.Default.Clear, null)
-								}
-							}
-
-							Text(
-								"Selected ${selectedIds.size} item${if (selectedIds.size != 1) "s" else ""}",
-								style = MaterialTheme.typography.titleMedium
-							)
-
-							TooltipBox(
-								positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
-								tooltip = {
-									PlainTooltip { Text("Share with anyone") }
-								},
-								state = rememberTooltipState()
-							) {
-								IconButton({}) {
-									Icon(Icons.Default.PersonAdd, null, Modifier.size(20.dp))
-								}
-							}
-
-							Spacer(Modifier.weight(1f))
-
-							Row(
-								modifier = Modifier.padding(end = 4.dp),
-								horizontalArrangement = Arrangement.spacedBy(8.dp),
-								verticalAlignment = Alignment.CenterVertically
-							) {
-								TextButton(onClick = { /* TODO: bulk actions like download/share */ }) {
-									Text("Actions")
-								}
-								TextButton(onClick = { viewModel.setSelectedIds(emptySet()) }) {
-									Text("Clear")
-								}
-							}
-						}
-					}
-				}
-			}
+			folderViewSticky()
 			if (!folderData?.subfolders.isNullOrEmpty()) {
 				item(span = { GridItemSpan(maxLineSpan) }) {
 					ExpandButton(
@@ -238,7 +176,7 @@ fun ColumnScope.FolderGridView(
 							),
 							modifier = Modifier
 								.padding(8.dp).height(55.dp)
-								.clip(RoundedCornerShape(12.dp))
+								.clip(RoundedCornerShape(12.dp)).cursorHand()
 								.graphicsLayer {
 									alpha = animatedProgress.value
 									val scale = 0.8f + (0.2f * animatedProgress.value)
@@ -304,9 +242,7 @@ fun ColumnScope.FolderGridView(
 								Spacer(Modifier.weight(1f))
 								Box {
 									Box(
-										modifier = Modifier
-											.clip(CircleShape)
-											.pointerHoverIcon(PointerIcon.Hand)
+										modifier = Modifier.clip(CircleShape).cursorHand()
 											.clickable(
 												onClick = { openMenuFolderId = folder.id },
 											)
@@ -323,7 +259,8 @@ fun ColumnScope.FolderGridView(
 										expanded = openMenuFolderId == folder.id,
 										onDismissRequest = { openMenuFolderId = null },
 										onRename = { openMenuFolderId = null },
-										onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+										onMove = { openMenuFolderId = null },
+										onShare = { openMenuFolderId = null; viewModel.emitSharingItem(folder.id, true) },
 										onDownload = {
 											scope.launch {
 												bottomSheetState.snackbarHostState.showSnackbar(
@@ -389,7 +326,7 @@ fun ColumnScope.FolderGridView(
 								}
 							),
 							modifier = Modifier.padding(8.dp).aspectRatio(1f)
-								.clip(RoundedCornerShape(12.dp))
+								.clip(RoundedCornerShape(12.dp)).cursorHand()
 								.graphicsLayer {
 									alpha = animatedProgress.value
 									val scale = 0.8f + (0.2f * animatedProgress.value)
@@ -460,7 +397,8 @@ fun ColumnScope.FolderGridView(
 											expanded = openMenuFolderId == file.id,
 											onDismissRequest = { openMenuFolderId = null },
 											onRename = { openMenuFolderId = null },
-											onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+											onMove = { openMenuFolderId = null },
+											onShare = { openMenuFolderId = null; viewModel.emitSharingItem(file.id, false) },
 											onDownload = {
 												scope.launch {
 													bottomSheetState.snackbarHostState.showSnackbar(

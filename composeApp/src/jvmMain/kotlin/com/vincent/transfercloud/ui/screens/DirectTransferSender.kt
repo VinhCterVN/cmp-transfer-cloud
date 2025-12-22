@@ -243,13 +243,13 @@ fun DirectTransferSendUI(
 									Text(
 										"Uploading Files:",
 										color = MaterialTheme.colorScheme.onSurfaceVariant,
-										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+										style = MaterialTheme.typography.titleMedium
 									)
 
 									Text(
 										"Selected ${uploadingFiles.size} files",
 										color = MaterialTheme.colorScheme.primary,
-										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+										style = MaterialTheme.typography.titleMedium
 									)
 									val totalSize = uploadingFiles.sumOf { it.length() }
 									Text(
@@ -260,7 +260,7 @@ fun DirectTransferSendUI(
 											else "${totalSize / (1024L * 1024L * 1024L)} GB"
 										}",
 										color = MaterialTheme.colorScheme.primary,
-										style = TitleLineLarge.copy(fontWeight = FontWeight.W500, lineHeight = 18.sp)
+										style = MaterialTheme.typography.titleMedium
 									)
 								}
 								LazyRow(

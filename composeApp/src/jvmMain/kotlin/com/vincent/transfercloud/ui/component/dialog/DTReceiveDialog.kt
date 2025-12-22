@@ -77,7 +77,7 @@ fun ReceiveDialog(
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.spacedBy(6.dp)
 			) {
-				Text("Transfer Received Files", style = HeadLineMedium)
+				Text("Transfer Received Files", style = HeadLineMedium, color = MaterialTheme.colorScheme.onSurface)
 
 				LazyColumn(
 					Modifier.heightIn(max = 400.dp).fillMaxWidth().padding(vertical = 8.dp),

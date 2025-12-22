@@ -2,20 +2,17 @@ package com.vincent.transfercloud.data.repository
 
 import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.FileOutputDto
+import com.vincent.transfercloud.data.dto.ShareMetadata
 import com.vincent.transfercloud.data.enum.FileLocation
 import com.vincent.transfercloud.data.enum.SharePermission
 import com.vincent.transfercloud.data.repository.FolderRepository.getFolderBreadcrumb
 import com.vincent.transfercloud.data.schema.Files
 import com.vincent.transfercloud.data.schema.Shares
+import com.vincent.transfercloud.data.schema.Users
 import com.vincent.transfercloud.utils.toFileOutputDto
+import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.and
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.deleteWhere
-import org.jetbrains.exposed.sql.insertAndGetId
-import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
-import org.jetbrains.exposed.sql.update
 import java.util.*
 
 object FileRepository {
@@ -88,7 +85,7 @@ object FileRepository {
 			.where { (Shares.sharedWithUserId eq ownerUuid) and (Shares.fileId.isNotNull()) }
 			.mapNotNull { it[Shares.fileId]?.value }
 
-		Files.selectAll().where { Files.id inList(sharedFileIds) }
+		Files.selectAll().where { Files.id inList (sharedFileIds) }
 			.map { it.toFileOutputDto(getFileBreadcrumb(it[Files.id].value, ownerUuid)) }
 	}
 
@@ -99,5 +96,24 @@ object FileRepository {
 		Files.update({ (Files.id eq fileUuid) and (Files.ownerId eq ownerUuid) }) {
 			it[folderId] = targetParentUuid
 		}
+	}
+
+	fun getFileSharedInfo(fileId: String, ownerId: String) = transaction {
+		val fileUuid = UUID.fromString(fileId)
+		val ownerUuid = UUID.fromString(ownerId)
+
+		Shares.selectAll()
+			.where { (Shares.fileId eq fileUuid) and (Shares.ownerId eq ownerUuid) }
+			.map {
+				val sharedWithUserEmail = Users.selectAll()
+					.where { Users.id eq it[Shares.sharedWithUserId] }
+					.singleOrNull()?.get(Users.email) ?: ""
+				ShareMetadata(
+					sharedWithUserId = it[Shares.sharedWithUserId].toString(),
+					sharedWithUserEmail = sharedWithUserEmail,
+					permission = it[Shares.permission],
+					sharedAt = it[Shares.createdAt].toString()
+				)
+			}
 	}
 }

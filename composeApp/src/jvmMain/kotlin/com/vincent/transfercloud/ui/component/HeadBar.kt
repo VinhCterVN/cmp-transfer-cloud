@@ -12,8 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
@@ -23,6 +21,7 @@ import com.vincent.transfercloud.ui.component.dialog.AppSettingsDialog
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
 import com.vincent.transfercloud.ui.viewModel.AppViewModel
+import com.vincent.transfercloud.utils.cursorHand
 import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
@@ -68,9 +67,8 @@ fun HeaderBar(
 		Spacer(Modifier.widthIn(4.dp))
 
 		if (windowState.size.width > 600.dp)
-//			HeadSearchBar()
-            HeadSearchDock()
-
+			HeadSearchBar()
+//            HeadSearchDock()
 		Spacer(Modifier.weight(1f))
 
 		TooltipBox(
@@ -109,20 +107,20 @@ fun HeaderBar(
 					text = { Text(currentUser?.fullName ?: "Guest", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.Default.Person, null) },
 					onClick = {},
-					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+					modifier = Modifier.cursorHand()
 				)
 				DropdownMenuItem(
 					text = { Text("Settings", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.Default.Settings, null) },
 					onClick = { showSettings = true },
-					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+					modifier = Modifier.cursorHand()
 				)
 				HorizontalDivider()
 				DropdownMenuItem(
 					text = { Text("Logout", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 					leadingIcon = { Icon(Icons.AutoMirrored.Filled.Logout, null) },
 					onClick = { viewModel.logout() },
-					modifier = Modifier.pointerHoverIcon(PointerIcon.Hand)
+					modifier = Modifier.cursorHand()
 				)
 			}
 		}

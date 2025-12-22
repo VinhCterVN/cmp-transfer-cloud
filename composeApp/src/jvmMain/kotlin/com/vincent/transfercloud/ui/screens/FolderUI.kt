@@ -39,8 +39,7 @@ import androidx.compose.ui.zIndex
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.currentOrThrow
-import com.vincent.transfercloud.ui.component.dialog.FileUploadDialog
-import com.vincent.transfercloud.ui.component.dialog.FolderNameDialog
+import com.vincent.transfercloud.ui.component.dialog.*
 import com.vincent.transfercloud.ui.component.fileView.FileChainView
 import com.vincent.transfercloud.ui.component.fileView.FolderGridView
 import com.vincent.transfercloud.ui.component.fileView.FolderListView
@@ -79,7 +78,6 @@ fun FolderUI(
 	var showTargetBorder by remember { mutableStateOf(false) }
 	var uploadingFile by remember { mutableStateOf<File?>(null) }
 	val draggedItem by viewModel.draggedItem.collectAsState()
-
 	val dragAndDropTarget = remember {
 		object : DragAndDropTarget {
 			override fun onStarted(event: DragAndDropEvent) {
@@ -224,7 +222,7 @@ fun FolderUI(
 					Spacer(Modifier.height(15.dp))
 					ElevatedButton({
 						scope.launch {
-						viewModel.getFolderData()
+							viewModel.getFolderData()
 						}
 					}) {
 						Text("Retry", style = TitleLineLarge)
@@ -239,6 +237,7 @@ fun FolderUI(
 					onCancel = { uploadingFile = null },
 					action = { uploadingFile = null }
 				)
+				ShareFileDialog()
 				Column(
 					Modifier.fillMaxSize().padding(horizontal = 4.dp, vertical = 4.dp),
 				) {

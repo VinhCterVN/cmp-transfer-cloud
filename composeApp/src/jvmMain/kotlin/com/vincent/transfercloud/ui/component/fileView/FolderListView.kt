@@ -56,6 +56,7 @@ import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import com.vincent.transfercloud.utils.cursorHand
 import com.vincent.transfercloud.utils.formatIsoToMonthDay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,11 +150,7 @@ fun ColumnScope.FolderListView(
 			state = listState,
 			contentPadding = PaddingValues(8.dp),
 		) {
-			folderViewSticky(
-				showSticky = selectedIds.isNotEmpty(),
-				count = selectedIds.size,
-				onClear = {}
-			)
+			folderViewSticky()
 			if (!folderData?.subfolders.isNullOrEmpty()) {
 				item {
 					Row(
@@ -228,7 +225,8 @@ fun ColumnScope.FolderListView(
 								override fun onDrop(event: DragAndDropEvent): Boolean {
 									viewModel.setHoveredFolder(null)
 									viewModel.draggedItem.value?.let {
-										scope.launch { bottomSheetState.snackbarHostState.showSnackbar(
+										scope.launch {
+											bottomSheetState.snackbarHostState.showSnackbar(
 												"${if (it.second == FolderObject.FOLDER) "Folder" else "File"} has been moved to ${folder.name}.",
 												actionLabel = "OK",
 												duration = SnackbarDuration.Short,
@@ -381,7 +379,7 @@ fun ColumnScope.FolderListView(
 								Box(
 									modifier = Modifier
 										.clip(CircleShape)
-										.pointerHoverIcon(PointerIcon.Hand)
+										.cursorHand()
 										.clickable(onClick = { openMenuFolderId = folder.id })
 										.padding(8.dp)
 								) {
@@ -396,7 +394,8 @@ fun ColumnScope.FolderListView(
 									expanded = openMenuFolderId == folder.id,
 									onDismissRequest = { openMenuFolderId = null },
 									onRename = { openMenuFolderId = null },
-									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+									onMove = { openMenuFolderId = null },
+									onShare = { openMenuFolderId = null; viewModel.emitSharingItem(folder.id, true) },
 									onDownload = {},
 									onDelete = {
 										scope.launch {
@@ -493,7 +492,7 @@ fun ColumnScope.FolderListView(
 										val modifiers = windowInfo.keyboardModifiers
 										handleSelection(index, file.id, modifiers)
 									},
-									onDoubleClick = {/*TODO: IMPLEMENT FILE PREVIEW*/}
+									onDoubleClick = {/*TODO: IMPLEMENT FILE PREVIEW*/ }
 								)
 								.background(
 									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
@@ -596,7 +595,7 @@ fun ColumnScope.FolderListView(
 								Box(
 									modifier = Modifier
 										.clip(CircleShape)
-										.pointerHoverIcon(PointerIcon.Hand)
+										.cursorHand()
 										.clickable { openMenuFolderId = file.id }
 										.padding(8.dp)
 								) {
@@ -611,7 +610,8 @@ fun ColumnScope.FolderListView(
 									expanded = openMenuFolderId == file.id,
 									onDismissRequest = { openMenuFolderId = null },
 									onRename = { openMenuFolderId = null },
-									onMove = { openMenuFolderId = null }, onShare = { openMenuFolderId = null },
+									onMove = { openMenuFolderId = null },
+									onShare = { openMenuFolderId = null; viewModel.emitSharingItem(file.id, false) },
 									onDownload = { viewModel.downloadFile(file) },
 									onDelete = {
 										scope.launch {

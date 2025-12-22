@@ -35,7 +35,7 @@ fun HeadSearchBar() {
 		onValueChange = { query = it },
 		singleLine = true,
 		modifier = Modifier.widthIn(max = 500.dp).onFocusChanged { isFocused = it.hasFocus },
-		textStyle = MessageStyle,
+		textStyle = MessageStyle.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
 	) { innerTextField ->
 		Row(
 			Modifier.background(

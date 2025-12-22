@@ -5,7 +5,6 @@ import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.UserOutputDto
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class AppState {
@@ -15,6 +14,7 @@ class AppState {
 	val currentUser = MutableStateFlow<UserOutputDto?>(null)
 	val networkConfig = MutableStateFlow(NetworkConfig())
 	val isCreatingFolder = MutableStateFlow(false)
+	val sharingFolder = MutableStateFlow("" to false)
 	val breadcrumb = MutableStateFlow<List<BreadcrumbItem>>(emptyList())
 	val currentFolder = MutableStateFlow("")
 	val clientSocket = MutableStateFlow<Socket?>(null)

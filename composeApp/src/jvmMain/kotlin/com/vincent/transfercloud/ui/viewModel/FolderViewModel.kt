@@ -59,10 +59,18 @@ class FolderViewModel(
 		} else setOf(id)
 	}
 
+	fun clearSelection() {
+		_selectedIds.value = emptySet()
+	}
+
 	fun selectAll() {
 		_selectedIds.value = folderData.value?.let { data ->
 			(data.subfolders.map { it.id } + data.files.map { it.id }).toSet()
 		} ?: emptySet()
+	}
+
+	fun emitSharingItem(id: String, isFolder: Boolean) {
+		appState.sharingFolder.value = id  to isFolder
 	}
 
 	fun startDragging(item: Pair<String, FolderObject>) {
@@ -272,6 +280,14 @@ class FolderViewModel(
 	}
 
 	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch {
+	}
+
+	fun findItemMetadata(id: String, isFolder: Boolean): Triple<String, String, String> {
+		if (folderData.value == null) throw IllegalStateException("Folder data is not loaded")
+		if (isFolder) return folderData.value!!.subfolders.first { it.id == id }
+			.let { Triple(it.id, it.ownerId, it.name) }
+		return folderData.value!!.files.first { it.id == id }
+			.let { Triple(it.id, it.ownerId, it.name) }
 	}
 
 	override fun onCleared() {

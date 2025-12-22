@@ -30,6 +30,8 @@ class ShareViewModel(
 				println(data.message)
 			},
 			onError = { e ->
+				_uiState.emit(UIState.Error(e))
+				println("Error fetching shared data: $e")
 			}
 		).join()
 		_uiState.emit(UIState.Ready)

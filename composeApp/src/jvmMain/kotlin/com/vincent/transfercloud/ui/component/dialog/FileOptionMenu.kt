@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.vincent.transfercloud.utils.cursorHand
 
 @Composable
 fun FileOptionMenu(
@@ -34,28 +35,32 @@ fun FileOptionMenu(
 			onClick = onRename,
 			leadingIcon = {
 				Icon(Icons.Default.Edit, contentDescription = null)
-			}
+			},
+			modifier = Modifier.cursorHand()
 		)
 		DropdownMenuItem(
 			text = { Text("Share") },
 			onClick = onShare,
 			leadingIcon = {
 				Icon(Icons.Default.Share, contentDescription = null)
-			}
+			},
+			modifier = Modifier.cursorHand()
 		)
 		DropdownMenuItem(
 			text = { Text("Move") },
 			onClick = onMove,
 			leadingIcon = {
 				Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
-			}
+			},
+			modifier = Modifier.cursorHand()
 		)
 		DropdownMenuItem(
 			text = { Text("Download") },
 			onClick = onDownload,
 			leadingIcon = {
 				Icon(Icons.Rounded.Download, contentDescription = null)
-			}
+			},
+			modifier = Modifier.cursorHand()
 		)
 		HorizontalDivider()
 		DropdownMenuItem(
@@ -67,7 +72,8 @@ fun FileOptionMenu(
 					contentDescription = null,
 					tint = MaterialTheme.colorScheme.error
 				)
-			}
+			},
+			modifier = Modifier.cursorHand()
 		)
 	}
 
