@@ -68,7 +68,8 @@ fun HeaderBar(
 		Spacer(Modifier.widthIn(4.dp))
 
 		if (windowState.size.width > 600.dp)
-			HeadSearchBar()
+//			HeadSearchBar()
+            HeadSearchDock()
 
 		Spacer(Modifier.weight(1f))
 

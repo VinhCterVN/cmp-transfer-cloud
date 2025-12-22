@@ -45,6 +45,9 @@ kotlin {
 			implementation(libs.filekit.dialogs)
 			implementation(libs.filekit.dialogs.compose)
 
+			implementation("net.jthink:jaudiotagger:3.0.1")
+			implementation("ws.schild:jave-core:3.5.0")
+			implementation("ws.schild:jave-native-win64:2.4.6")
 			implementation(projects.shared)
 		}
 		commonTest.dependencies {

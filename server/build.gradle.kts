@@ -15,7 +15,6 @@ application {
 
 dependencies {
 	implementation(projects.shared)
-	implementation(libs.logback)
 	implementation(libs.ktor.serverCore)
 	implementation(libs.ktor.serverNetty)
 	implementation(libs.ktor.serialization.kotlinx.json)
@@ -34,4 +33,8 @@ dependencies {
 	implementation("io.github.serpro69:kotlin-faker:2.0.0-rc.11")
 	testImplementation(libs.ktor.serverTestHost)
 	testImplementation(libs.kotlin.testJunit)
+
+	implementation("net.jthink:jaudiotagger:3.0.1")
+	implementation("ws.schild:jave-core:3.5.0")
+	implementation("ws.schild:jave-native-win64:2.4.6")
 }

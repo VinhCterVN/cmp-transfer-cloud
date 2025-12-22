@@ -35,6 +35,8 @@ class DirectTransferSendVM(
 		.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 	private val _isUploading = MutableStateFlow(false)
 	val isUploading = _isUploading.asStateFlow()
+	private val _uploadingToId = MutableStateFlow("")
+	val uploadingToId = _uploadingToId.asStateFlow()
 	private val _sendingProgress = MutableStateFlow(0 to 0)
 	val sendingProgress = _sendingProgress.asStateFlow()
 	private val _bytesProgress = MutableStateFlow(0L to 0L)
@@ -94,6 +96,7 @@ class DirectTransferSendVM(
 	fun transferTo(device: DirectTransferDto) = viewModelScope.launch {
 		try {
 			_isUploading.emit(true)
+			_uploadingToId.emit(device.fromId)
 			val socket = aSocket(selectorManager).tcp().connect(device.tcpHost, device.tcpPort)
 			val writeChannel = socket.openWriteChannel(autoFlush = true)
 			val dto = appState.currentUser.value?.let {
@@ -103,6 +106,7 @@ class DirectTransferSendVM(
 					fromId = it.id,
 					toId = device.fromId,
 					filesCount = _uploadingFiles.value.size,
+					files = _uploadingFiles.value.map { file -> file.name },
 					totalSize = _uploadingFiles.value.sumOf { file -> file.length() }
 				)
 			}
@@ -150,6 +154,7 @@ class DirectTransferSendVM(
 			println("Finished sending $totalFiles files ($totalBytes bytes) to ${device.tcpHost}:${device.tcpPort}")
 			_sendingProgress.emit(0 to 0)
 			_bytesProgress.emit(0L to 0L)
+			_uploadingToId.emit("")
 			_isUploading.emit(false)
 			writeChannel.cancel(IOException())
 			socket.close()

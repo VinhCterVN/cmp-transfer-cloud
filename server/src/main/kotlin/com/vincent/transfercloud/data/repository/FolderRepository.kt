@@ -2,6 +2,7 @@
 
 package com.vincent.transfercloud.data.repository
 
+import com.vincent.transfercloud.core.server.createFileThumbnailBytes
 import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.FolderOutputDto
 import com.vincent.transfercloud.data.dto.FolderWithContentsDto
@@ -9,6 +10,7 @@ import com.vincent.transfercloud.data.enum.SharePermission
 import com.vincent.transfercloud.data.schema.Files
 import com.vincent.transfercloud.data.schema.Folders
 import com.vincent.transfercloud.data.schema.Shares
+import com.vincent.transfercloud.helper.getFileHasThumbnail
 import com.vincent.transfercloud.utils.toFileOutputDto
 import com.vincent.transfercloud.utils.toFolderOutputDto
 import org.jetbrains.exposed.sql.*
@@ -35,7 +37,7 @@ object FolderRepository {
 		FolderWithContentsDto(
 			folder = folder,
 			subfolders = subfolders,
-			files = subfiles
+			files = subfiles.map { it.copy(hasThumbnail = getFileHasThumbnail(it.name)) }
 		)
 	}
 

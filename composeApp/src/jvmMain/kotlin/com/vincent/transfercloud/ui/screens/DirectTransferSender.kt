@@ -6,7 +6,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,15 +33,14 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import cafe.adriel.voyager.navigator.LocalNavigator
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.navigator.currentOrThrow
 import coil3.compose.AsyncImage
+import com.vincent.transfercloud.ui.component.FilePreviewCard
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
-import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.HeadLineLarge
 import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.TitleLineBig
@@ -69,6 +67,7 @@ fun DirectTransferSendUI(
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val devices by viewModel.availableReceivers.collectAsState()
 	val uploadingFiles by viewModel.uploadingFiles.collectAsState()
+	val uploadingToId by viewModel.uploadingToId.collectAsState()
 	val isUploading by viewModel.isUploading.collectAsState()
 	val sendingProgress by viewModel.sendingProgress.collectAsState()
 	val bytesProgress by viewModel.bytesProgress.collectAsState()
@@ -269,61 +268,12 @@ fun DirectTransferSendUI(
 									modifier = Modifier.padding(top = 8.dp)
 								) {
 									items(uploadingFiles) { file ->
-										Column(
-											Modifier.widthIn(max = 100.dp)
-										) {
-											Box(
-												modifier = Modifier
-													.heightIn(max = 100.dp)
-													.clip(RoundedCornerShape(8.dp))
-											) {
-												if (file.isImage()) {
-													AsyncImage(
-														model = file.absolutePath,
-														contentDescription = null,
-														contentScale = ContentScale.Crop,
-														modifier = Modifier.fillMaxSize()
-													)
-												} else {
-													// Icon cho file không phải hình
-													Box(
-														Modifier.fillMaxSize().background(Color.Gray.copy(alpha = 0.05f))
-													) {
-														Icon(
-//															imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-															painterResource(getFileIcon(file.name)),
-															contentDescription = null,
-															modifier = Modifier
-																.fillMaxSize(0.75f)
-																.aspectRatio(1f)
-																.align(Alignment.Center),
-															tint = Color.Unspecified
-														)
-													}
-												}
-
-												IconButton(
-													onClick = { viewModel.removeTransferFile(file) },
-													modifier = Modifier
-														.size(16.dp)
-														.align(Alignment.TopEnd)
-												) {
-													Icon(
-														imageVector = Icons.Default.Close,
-														contentDescription = "Remove",
-														modifier = Modifier.size(12.dp)
-													)
-												}
-											}
-											Text(
-												text = file.name,
-												maxLines = 1,
-												fontSize = 12.sp,
-												overflow = TextOverflow.Ellipsis,
-												modifier = Modifier.basicMarquee()
-											)
-										}
+										FilePreviewCard(
+											file = file,
+											onRemove = { viewModel.removeTransferFile(file) }
+										)
 									}
+
 									item {
 										Box(
 											modifier = Modifier
@@ -445,7 +395,7 @@ fun DirectTransferSendUI(
 									}
 								}
 							}
-							if (isUploading) {
+							if (isUploading && device.fromId == uploadingToId) {
 								LinearProgressIndicator(
 									progress = { animatedProgress },
 									modifier = Modifier
@@ -536,13 +486,4 @@ private fun TrailingContent() {
 			Icon(Icons.Filled.Favorite, contentDescription = "Localized description")
 		}
 	}
-}
-
-fun File.isImage(): Boolean {
-	val lower = name.lowercase()
-	return lower.endsWith(".jpg") ||
-			lower.endsWith(".jpeg") ||
-			lower.endsWith(".png") ||
-			lower.endsWith(".gif") ||
-			lower.endsWith(".webp")
 }

@@ -25,6 +25,8 @@ data class FileOutputDto(
 	val mimeType: String,
 	val storagePath: String,
 	val location: FileLocation,
+	var hasThumbnail: Boolean = false,
+	var thumbnailBytes: ByteArray? = null,
 	val createdAt: String,
 	val updatedAt: String
 )

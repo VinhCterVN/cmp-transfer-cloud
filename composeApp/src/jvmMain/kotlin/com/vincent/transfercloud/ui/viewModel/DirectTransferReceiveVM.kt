@@ -23,6 +23,7 @@ import java.net.InetAddress
 class DirectTransferReceiveVM(
 	private val appState: AppState
 ) : ViewModel() {
+	private val root = "C:\\TransferCloud\\DirectTransfer\\Received"
 	private val selectorManager: SelectorManager = ActorSelectorManager(Dispatchers.IO)
 	private var broadcastSocket: BoundDatagramSocket? = null
 	private var transferSocket: ServerSocket? = null
@@ -87,10 +88,10 @@ class DirectTransferReceiveVM(
 		try {
 			val receiveChannel = socket.openReadChannel()
 			val dtoString = receiveChannel.readUTF8Line()
-			val fileDirs = emptyList<String>()
+			val fileDirs = mutableListOf<String>()
 			if (dtoString != null) {
 				val receivedDto = json.decodeFromString<DirectTransferSend>(dtoString)
-				val cacheDir = "C:\\TransferCloud\\DirectTransfer\\Received\\${receivedDto.id}"
+				val cacheDir = "$root\\${receivedDto.id}"
 				val file = File(cacheDir).apply { if (!exists()) mkdirs() }
 				repeat(receivedDto.filesCount) {
 					val meta = receiveChannel.readUTF8Line()
@@ -101,7 +102,7 @@ class DirectTransferReceiveVM(
 					val start = System.currentTimeMillis()
 					receiveChannel.copyTo(writeChanel, limit = metaDto.fileSize)
 					writeChanel.flushAndClose()
-					fileDirs.plus(outputFile.absolutePath)
+					fileDirs.add(outputFile.absolutePath)
 					println("Saved: ${outputFile.absolutePath} in ${System.currentTimeMillis() - start}ms")
 				}
 				_receivedData.update { currentMap ->
@@ -120,6 +121,14 @@ class DirectTransferReceiveVM(
 		}
 	}
 
+	fun deleteReceiveData(id: String) = viewModelScope.launch {
+		_receivedData.update { currentMap ->
+			currentMap - id
+		}
+		val dir = File("$root\\$id")
+		if (dir.exists()) dir.deleteRecursively()
+	}
+
 	override fun onCleared() {
 		super.onCleared()
 		broadcastJob?.cancel()
@@ -127,5 +136,9 @@ class DirectTransferReceiveVM(
 		transferSocket?.close()
 		selectorManager.close()
 		println("DirectTransferViewModel cleared and resources released")
+		_receivedData.value.keys.forEach { id ->
+			val dir = File("$root\\$id")
+			if (dir.exists()) dir.deleteRecursively()
+		}
 	}
 }

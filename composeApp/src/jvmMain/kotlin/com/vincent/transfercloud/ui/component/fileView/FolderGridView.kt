@@ -30,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
@@ -61,6 +62,7 @@ import org.jetbrains.compose.resources.painterResource
 import org.koin.compose.koinInject
 import transfercloud.composeapp.generated.resources.Res
 import transfercloud.composeapp.generated.resources.empty_state_empty_folder
+import transfercloud.composeapp.generated.resources.mdi__file_video
 import java.awt.datatransfer.StringSelection
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
@@ -74,6 +76,7 @@ fun ColumnScope.FolderGridView(
 	val navigator = LocalNavigator.currentOrThrow
 	val bottomSheetState = LocalBottomSheetScaffoldState.current
 	val folderData by viewModel.folderData.collectAsState()
+	val tempFiles by viewModel.tempFiles.collectAsState()
 	val foldersExpanded = remember { mutableStateOf(true) }
 	val filesExpanded = remember { mutableStateOf(true) }
 	var openMenuFolderId by remember { mutableStateOf<String?>(null) }
@@ -201,11 +204,13 @@ fun ColumnScope.FolderGridView(
 									viewModel.setHoveredFolder(null)
 									viewModel.draggedItem.value?.let {
 										viewModel.moveItem(folder.id)
-										scope.launch { bottomSheetState.snackbarHostState.showSnackbar(
-											"${if (it.second == FolderObject.FOLDER) "Folder" else "File"} has been moved to ${folder.name}.",
-											actionLabel = "OK",
-											duration = SnackbarDuration.Short,
-										) }
+										scope.launch {
+											bottomSheetState.snackbarHostState.showSnackbar(
+												"${if (it.second == FolderObject.FOLDER) "Folder" else "File"} has been moved to ${folder.name}.",
+												actionLabel = "OK",
+												duration = SnackbarDuration.Short,
+											)
+										}
 										return true
 									}
 									return false
@@ -493,8 +498,57 @@ fun ColumnScope.FolderGridView(
 								) {
 									Box(
 										Modifier.fillMaxSize()
-											.background(MaterialTheme.colorScheme.onSurfaceVariant, RoundedCornerShape(4.dp))
-									) {}
+											.clip(RoundedCornerShape(4.dp))
+											.background(MaterialTheme.colorScheme.onSurfaceVariant.copy(0.5f), RoundedCornerShape(4.dp))
+									) {
+										if (file.hasThumbnail && tempFiles[file.id]?.exists() == true) {
+											AsyncImage(
+												model = tempFiles[file.id]?.absolutePath,
+												contentDescription = null,
+												contentScale = ContentScale.Crop,
+												modifier = Modifier.fillMaxSize(),
+											)
+
+											Box(
+												modifier = Modifier
+													.align(Alignment.BottomEnd)
+													.padding(4.dp)
+													.background(
+														Color.Black.copy(alpha = 0.6f),
+														RoundedCornerShape(4.dp)
+													)
+													.padding(4.dp)
+											) {
+												Icon(
+													painter = painterResource(getFileIcon(file.name)),
+													contentDescription = null,
+													modifier = Modifier.size(20.dp),
+													tint = Color.White
+												)
+											}
+										} else {
+											Box(
+												Modifier
+													.fillMaxSize()
+													.background(
+														brush = Brush.verticalGradient(
+															colors = listOf(
+																Color(0xFF1E3A8A).copy(0.25f),
+																Color(0xFF3B82F6).copy(0.25f)
+															)
+														)
+													),
+												contentAlignment = Alignment.Center
+											) {
+												Icon(
+													painter = painterResource(getFileIcon(file.name)),
+													contentDescription = null,
+													modifier = Modifier.size(48.dp),
+													tint = Color.White.copy(alpha = 0.5f)
+												)
+											}
+										}
+									}
 								}
 								Row(
 									modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),

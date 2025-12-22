@@ -5,15 +5,6 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
 object KeyManager {
-	private const val MY_APP_PASSWORD = "VincentTran"
-
-	fun getFixedSecretKey(): SecretKey {
-		val passwordBytes = MY_APP_PASSWORD.toByteArray(Charsets.UTF_8)
-		val sha = MessageDigest.getInstance("SHA-256")
-		val keyBytes = sha.digest(passwordBytes)
-		return SecretKeySpec(keyBytes, "AES")
-	}
-
 	fun getFixedSecretKeyFromEnv(): SecretKey {
 		val password = System.getenv("APP_ENCRYPTION_KEY")
 			?: throw IllegalStateException("Environment variable APP_ENCRYPTION_KEY is not set")

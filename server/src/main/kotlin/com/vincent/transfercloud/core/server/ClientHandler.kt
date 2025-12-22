@@ -28,6 +28,7 @@ class ClientHandler(
 	init {
 		println("ClientHandler initialized for ${socket.remoteAddress}")
 	}
+
 	fun start() = scope.launch(Dispatchers.IO) {
 		try {
 			var line: String? = ""
@@ -247,13 +248,7 @@ class ClientHandler(
 						message = if (folder != null) "Folder found" else "Folder not found",
 						data = folder
 					)
-					send(
-						SocketResponse(
-							status = response.status,
-							message = response.message,
-							data = json.encodeToString(response)
-						)
-					)
+					send(SocketResponse(response.status, response.message, json.encodeToString(response)))
 				}
 
 				"shared-with-me" -> {
@@ -273,6 +268,22 @@ class ClientHandler(
 							data = json.encodeToString(response)
 						)
 					)
+				}
+
+				"file-thumbnail" -> {
+					if (req.id == null) {
+						send(SocketResponse(ResponseStatus.ERROR, "File ID required"))
+						return
+					}
+					val fileRecord = FileRepository.getFileById(req.id!!, req.ownerId!!)
+					val bytes = createFileThumbnailBytes(fileRecord!!.name, fileRecord.ownerId, null, fileRecord.storagePath)
+					val response = GetThumbnailResponseDto(
+						fileId = req.id!!,
+						status = if (bytes != null) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
+						message = if (bytes != null) "Thumbnail retrieved" else "Thumbnail not found",
+						thumbnailBytes = bytes
+					)
+					send(SocketResponse(response.status, response.message, json.encodeToString(response)))
 				}
 
 				else -> {
@@ -391,6 +402,7 @@ class ClientHandler(
 						shareIds = fileReq.shareIds,
 						storagePath = "${fileReq.ownerId}/$encPath"
 					)
+					file?.thumbnailBytes = createFileThumbnailBytes(fileReq.fileName, fileReq.ownerId, encPath, null)
 					val response = CreateFileResponseDto(
 						file = file,
 						status = if (file != null) ResponseStatus.SUCCESS else ResponseStatus.ERROR,

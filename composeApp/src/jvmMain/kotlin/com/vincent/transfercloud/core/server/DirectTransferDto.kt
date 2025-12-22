@@ -29,7 +29,7 @@ data class DirectTransferSend @OptIn(ExperimentalTime::class) constructor(
 	val fromId: String,
 	val toId: String,
 	val filesCount: Int,
-	var files: List<String> = emptyList(),
+	var files: List<String>,
 	val totalSize: Long,
 	val transferTime: Long = Instant.now().epochSecond
 )

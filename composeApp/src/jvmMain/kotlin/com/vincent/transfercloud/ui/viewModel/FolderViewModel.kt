@@ -6,19 +6,24 @@ import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.FileViewIndex
 import com.vincent.transfercloud.ui.state.UIState
+import com.vincent.transfercloud.utils.ThumbnailHelper
 import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.absolutePath
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.write
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import java.io.File
 
 class FolderViewModel(
 	appState: AppState,
 ) : BaseSocketViewModel(appState) {
+	val thumbnailDir = "C:\\TransferCloud\\Thumbnails"
 	val currentUser = appState.currentUser.value!!
 	val folderData = MutableStateFlow<FolderWithContentsDto?>(null)
 	val filteredUsers = MutableStateFlow<List<UserOutputDto>>(emptyList())
@@ -31,6 +36,9 @@ class FolderViewModel(
 	val hoveredFolderId = _hoveredFolderId.asStateFlow()
 	private val _uiState = MutableStateFlow<UIState>(UIState.Loading)
 	val uiState = _uiState.asStateFlow()
+	private val _tempFiles = MutableStateFlow<Map<String, File>>(emptyMap())
+	val tempFiles = _tempFiles.asStateFlow()
+	val thumbnailSemaphore = Semaphore(1)
 
 	init {
 		viewModelScope.launch {
@@ -38,6 +46,7 @@ class FolderViewModel(
 				if (newId.isNotEmpty()) getFolderData(newId)
 			}
 		}
+		viewModelScope.launch { _tempFiles.value = ThumbnailHelper.load() }
 	}
 
 	fun setSelectedIds(ids: Set<String>) {
@@ -96,10 +105,9 @@ class FolderViewModel(
 		println("Moved to $targetFolderId")
 	}
 
-	suspend fun getFolderData(folderId: String = appState.currentFolder.value) {
-		if (folderId.isEmpty()) return;
+	fun getFolderData(folderId: String = appState.currentFolder.value) {
+		if (folderId.isEmpty()) return
 		_uiState.value = UIState.Loading
-		delay(50)
 		sendRequest(
 			type = SocketRequestType.GET,
 			payload = GetRequest("folder", folderId, appState.currentUser.value!!.id),
@@ -109,6 +117,15 @@ class FolderViewModel(
 				folderData.value = data.data?.copy(
 					subfolders = data.data?.subfolders?.sortedBy { it.name } ?: emptyList(),
 				)
+				viewModelScope.launch {
+					data.data?.files?.filter { it.hasThumbnail }?.forEach { file ->
+						launch {
+							thumbnailSemaphore.withPermit {
+								getThumbnail(file.id, file.ownerId).join()
+							}
+						}
+					}
+				}
 				_uiState.value = UIState.Ready
 			},
 			onError = { msg ->
@@ -228,6 +245,8 @@ class FolderViewModel(
 				folderData.value = folderData.value?.copy(
 					files = folderData.value?.files!!.plus(newFile.file!!)
 				)
+				if (newFile.file!!.hasThumbnail) saveThumbnail(newFile.file!!.id, newFile.file?.thumbnailBytes)
+
 				println("File uploaded successfully: ${newFile.message}")
 			},
 			onError = { msg ->
@@ -253,7 +272,36 @@ class FolderViewModel(
 	}
 
 	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch {
-//		TODO: Implement folder download
+	}
+
+	override fun onCleared() {
+		super.onCleared()
+		ThumbnailHelper.save(_tempFiles.value)
+		_tempFiles.value.forEach { (_, file) -> file.delete() }
+	}
+
+	fun getThumbnail(fileId: String, ownerId: String) = viewModelScope.launch {
+		if (_tempFiles.value.containsKey(fileId)) return@launch
+		sendRequest(
+			type = SocketRequestType.GET,
+			payload = GetRequest("file-thumbnail", fileId, ownerId),
+			onSuccess = { res ->
+				val data = json.decodeFromString<GetThumbnailResponseDto>(res.data!!)
+				saveThumbnail(data.fileId, data.thumbnailBytes)
+			},
+			onError = {
+				println("Get Thumbnail Error: $it")
+			}
+		).join()
+	}
+
+	fun saveThumbnail(fileId: String, thumbnailBytes: ByteArray?) = viewModelScope.launch(Dispatchers.IO) {
+		if (thumbnailBytes == null) return@launch
+		val persistentDir = File(thumbnailDir).apply { if (!exists()) mkdirs() }
+		val file = File(persistentDir, "$fileId.jpg")
+		file.writeBytes(thumbnailBytes)
+		_tempFiles.update { it + (fileId to file) }
+		ThumbnailHelper.save(_tempFiles.value)
 	}
 }
 

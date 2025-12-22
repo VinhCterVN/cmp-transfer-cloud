@@ -23,7 +23,6 @@ object FileEncryptor {
 	 */
 	fun saveEncryptedFile(data: ByteArray, fileName: String, ownerId: String, secretKey: SecretKey): String {
 		val newName = fileNameWithoutExtensionFromPath(fileName)
-		val storageDir = File(System.getProperty("user.dir"), "storage").apply { if (!exists()) mkdirs() }
 		val ownerDir = File(storageDir, ownerId).apply { if (!exists()) mkdirs() }
 		val outputFile = File(ownerDir, "${System.currentTimeMillis()}_$newName.enc")
 

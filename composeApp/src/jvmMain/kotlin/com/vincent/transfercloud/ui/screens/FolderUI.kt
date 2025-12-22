@@ -48,6 +48,7 @@ import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.FileViewIndex
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.UIState
+import com.vincent.transfercloud.ui.theme.LabelLineMedium
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import io.github.alexzhirkevich.compottie.Compottie
@@ -104,16 +105,16 @@ fun FolderUI(
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
 					val pending = files.first() as File
-					if (pending.length() > 10 * 1024 * 1024) {
-						scope.launch {
-							scaffoldState.snackbarHostState.showSnackbar(
-								"File size exceeds 10MB limit.",
-								actionLabel = "Hide",
-								duration = SnackbarDuration.Short
-							)
-						}
-						return false
-					}
+//					if (pending.length() > 10 * 1024 * 1024) {
+//						scope.launch {
+//							scaffoldState.snackbarHostState.showSnackbar(
+//								"File size exceeds 10MB limit.",
+//								actionLabel = "Hide",
+//								duration = SnackbarDuration.Short
+//							)
+//						}
+//						return false
+//					}
 					uploadingFile = pending
 				}
 				return true
@@ -218,6 +219,9 @@ fun FolderUI(
 						}
 					)
 					Text("Error loading folder data.", style = TitleLineLarge)
+					Spacer(Modifier.height(15.dp))
+					Text((uiState as UIState.Error).message, style = LabelLineMedium)
+					Spacer(Modifier.height(15.dp))
 					ElevatedButton({
 						scope.launch {
 						viewModel.getFolderData()

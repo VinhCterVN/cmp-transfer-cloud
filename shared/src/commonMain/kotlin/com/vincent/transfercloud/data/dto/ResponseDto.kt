@@ -45,3 +45,11 @@ data class DownloadFileResource(
 	val mimeType: String,
 	val data: ByteArray
 )
+
+@Serializable
+data class GetThumbnailResponseDto(
+	val fileId: String,
+	val status: ResponseStatus,
+	val message: String,
+	val thumbnailBytes: ByteArray?
+)
