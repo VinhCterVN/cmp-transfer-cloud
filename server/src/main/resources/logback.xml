@@ -9,4 +9,10 @@
     </root>
     <logger name="org.eclipse.jetty" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
+
+    <logger name="Exposed" level="INFO"/>
+    <logger name="org.jetbrains.exposed" level="INFO"/>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
 </configuration>

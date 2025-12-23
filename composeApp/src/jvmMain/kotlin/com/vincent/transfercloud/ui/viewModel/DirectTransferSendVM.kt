@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.ViewModel
@@ -13,11 +15,8 @@ import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import okio.IOException
 import java.io.File
 import java.net.InetSocketAddress
@@ -97,7 +96,8 @@ class DirectTransferSendVM(
 		try {
 			_isUploading.emit(true)
 			_uploadingToId.emit(device.fromId)
-			val socket = aSocket(selectorManager).tcp().connect(device.tcpHost, device.tcpPort)
+			val socket = connectFastest(device.tcpHosts, device.tcpPort)
+			if (socket == null) throw IOException("Unable to connect to any provided host.")
 			val writeChannel = socket.openWriteChannel(autoFlush = true)
 			val dto = appState.currentUser.value?.let {
 				DirectTransferSend(
@@ -151,7 +151,7 @@ class DirectTransferSendVM(
 				}
 			}
 
-			println("Finished sending $totalFiles files ($totalBytes bytes) to ${device.tcpHost}:${device.tcpPort}")
+			println("Finished sending $totalFiles files ($totalBytes bytes) to ${device.tcpHosts}:${device.tcpPort}")
 			_sendingProgress.emit(0 to 0)
 			_bytesProgress.emit(0L to 0L)
 			_uploadingToId.emit("")
@@ -183,6 +183,22 @@ class DirectTransferSendVM(
 
 	fun clearTransferFiles() {
 		_uploadingFiles.value = emptyList()
+	}
+
+	suspend fun connectFastest(hosts: List<String>, port: Int): Socket? = coroutineScope {
+		val deferredSockets = hosts.map { host ->
+			async(Dispatchers.IO) {
+				try {
+					withTimeout(2000) { aSocket(selectorManager).tcp().connect(host, port) }
+				} catch (_: Exception) { null }
+			}
+		}
+		val socket = deferredSockets.awaitAll().firstOrNull { it != null }
+		deferredSockets.forEach { deferred ->
+			val s = deferred.getCompleted()
+			if (s != socket) s?.close()
+		}
+		return@coroutineScope socket
 	}
 
 	override fun onCleared() {

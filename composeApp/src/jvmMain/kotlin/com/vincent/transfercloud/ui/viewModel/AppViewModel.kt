@@ -8,7 +8,6 @@ import com.vincent.transfercloud.data.dto.SocketRequestType
 import com.vincent.transfercloud.data.dto.UserInputDto
 import com.vincent.transfercloud.data.dto.UserOutputDto
 import com.vincent.transfercloud.ui.state.AppState
-import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.*
@@ -21,13 +20,12 @@ class AppViewModel(
 	private var password: String? = null
 	private val socket = appState.clientSocket
 	private var reconnectJob: Job? = null
-	private var heartbeatJob: Job? = null
 	private var reconnectAttempts = 0
 	private val maxReconnectAttempts = 10
 	private val baseReconnectDelayMs = 2000L
 
 	init {
-		viewModelScope.launch {
+		viewModelScope.launch(Dispatchers.IO) {
 			appState.networkConfig.collect { newConfig ->
 				println("Network Config Updated: $newConfig")
 				reconnectWithNewConfig()
@@ -35,10 +33,9 @@ class AppViewModel(
 		}
 	}
 
-	private fun connect() = viewModelScope.launch {
+	private fun connect() = viewModelScope.launch(Dispatchers.IO) {
 		try {
 			reconnectJob?.cancel()
-			heartbeatJob?.cancel()
 			disconnect(false)
 			val config = appState.networkConfig.value
 			socket.value = aSocket(selectorManager).tcp().connect(config.host, config.port)
@@ -52,21 +49,10 @@ class AppViewModel(
 			appState.isConnected.emit(true)
 			reconnectAttempts = 0
 
-			startHeartbeat()
-		} catch (e: ConnectException) {
-			println("Cannot connect to server: ${e.message}")
-			appState.isConnected.emit(false)
-			scheduleReconnect()
+		} catch (_: ConnectException) {
+			handleConnectionLost("Unable to connect to server at ${appState.networkConfig.value.host}:${appState.networkConfig.value.port}")
 		} catch (e: Exception) {
-			println("Connection error: ${e.message}")
-			appState.isConnected.emit(false)
-			scheduleReconnect()
-		}
-	}
-
-	private fun startHeartbeat() {
-		heartbeatJob?.cancel()
-		heartbeatJob = viewModelScope.launch {
+			handleConnectionLost("Connection lost: ${e.message}")
 		}
 	}
 
@@ -80,7 +66,7 @@ class AppViewModel(
 		val currentUser = appState.currentUser.value
 
 		disconnect(closeSelector = false)
-		connect()
+		connect().join()
 
 		currentUser?.let { user ->
 			delay(500)
@@ -96,7 +82,7 @@ class AppViewModel(
 			reconnectAttempts++
 
 			println("Scheduling reconnect attempt $reconnectAttempts in ${delayMs}ms")
-			reconnectJob = viewModelScope.launch {
+			reconnectJob = viewModelScope.launch(Dispatchers.IO) {
 				delay(delayMs)
 				connect()
 			}
@@ -155,7 +141,7 @@ class AppViewModel(
 		appState.currentUser.value = null
 	}
 
-	private suspend fun disconnect(closeSelector: Boolean = true) = viewModelScope.async {
+	private suspend fun disconnect(closeSelector: Boolean = true) = viewModelScope.launch(Dispatchers.IO) {
 		try {
 			sendChannel.value?.flushAndClose()
 			receiveChannel.value?.cancel()
@@ -169,7 +155,7 @@ class AppViewModel(
 				selectorManager.close()
 			}
 		}
-	}.await()
+	}.join()
 
 	fun setNetworkConfig(host: String, port: Int) {
 		val newConfig = NetworkConfig(host, port)

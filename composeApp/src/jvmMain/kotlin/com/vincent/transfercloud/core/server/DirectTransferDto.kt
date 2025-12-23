@@ -11,7 +11,7 @@ data class DirectTransferDto(
 	val fromAvatar: String,
 	val fromId: String,
 	val fromDeviceName: String,
-	val tcpHost: String,
+	val tcpHosts: List<String>,
 	val tcpPort: Int,
 )
 

@@ -26,6 +26,7 @@ fun AppSettingsDialog(
 ) {
 	val scope = rememberCoroutineScope()
 	val networkConfig = appState.networkConfig.collectAsState()
+	val transferConfig = appState.transferConfig.collectAsState()
 	val isConnected = appState.isConnected.collectAsState()
 	// --- Mock Data States ---
 	// Group 1: General
@@ -38,6 +39,9 @@ fun AppSettingsDialog(
 	var tempHost by remember { mutableStateOf(networkConfig.value.host) }
 	var tempPort by remember { mutableStateOf(networkConfig.value.port.toString()) }
 	var portError by remember { mutableStateOf(false) }
+	// Group 4: Direct Transfer
+	var localAddress by remember { mutableStateOf(transferConfig.value.localAddress) }
+	var discoveryPort by remember { mutableStateOf(transferConfig.value.discoveryPort) }
 	// --- UI Dialog ---
 	Dialog(onDismissRequest = onDismissRequest) {
 		Card(
@@ -103,7 +107,7 @@ fun AppSettingsDialog(
 								onClick = {
 									if (!portError) {
 										val port = tempPort.toInt()
-										scope.launch {viewModel.setNetworkConfig(tempHost, port) }
+										scope.launch { viewModel.setNetworkConfig(tempHost, port) }
 									}
 								}
 							))
@@ -124,7 +128,6 @@ fun AppSettingsDialog(
 									val port = it.toInt()
 									port <= 0 || port > 65535
 								} catch (_: NumberFormatException) {
-
 									true
 								}
 							},
@@ -133,7 +136,47 @@ fun AppSettingsDialog(
 						SettingButtonRow(buttons = buttons)
 						HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 					}
-					// --- GROUP 2: PRIVACY ---
+					// --- GROUP 3: Direct Transfering ---
+					item {
+						val buttons = listOf(
+							SettingButton(
+								label = "Reset",
+								buttonType = "outlined",
+								onClick = {
+									localAddress = ""
+									discoveryPort = 16789
+								}
+							),
+							SettingButton(
+								label = "Apply",
+								buttonType = "elevated",
+								onClick = {
+									// Apply direct transfer settings
+								}
+							))
+						SettingsGroupLabel("Direct Transfering")
+						SettingTextFieldItem(
+							label = "Local Address",
+							text = localAddress,
+							onTextChange = { localAddress = it },
+							modifier = Modifier.fillMaxSize()
+						)
+						SettingTextFieldItem(
+							label = "Discovery Port",
+							text = discoveryPort.toString(),
+							onTextChange = {
+								discoveryPort = try {
+									it.toInt()
+								} catch (_: NumberFormatException) {
+									16789
+								}
+							},
+							modifier = Modifier.fillMaxSize()
+						)
+						SettingButtonRow(buttons = buttons)
+						HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+					}
+					// --- GROUP 4: PRIVACY ---
 					item {
 						SettingsGroupLabel("Privacy")
 						SettingsSwitchItem(
@@ -150,7 +193,7 @@ fun AppSettingsDialog(
 						)
 						HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 					}
-					// --- GROUP 3: SYSTEM ---
+					// --- GROUP 5: SYSTEM ---
 					item {
 						SettingsGroupLabel("System")
 						SettingsSwitchItem(

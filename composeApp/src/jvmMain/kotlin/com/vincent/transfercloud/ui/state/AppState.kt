@@ -1,6 +1,7 @@
 package com.vincent.transfercloud.ui.state
 
 import com.vincent.transfercloud.core.model.NetworkConfig
+import com.vincent.transfercloud.core.model.TransferConfig
 import com.vincent.transfercloud.data.dto.BreadcrumbItem
 import com.vincent.transfercloud.data.dto.UserOutputDto
 import io.ktor.network.sockets.*
@@ -13,6 +14,7 @@ class AppState {
 	val currentTab = MutableStateFlow<AppTab>(AppTab.HOME)
 	val currentUser = MutableStateFlow<UserOutputDto?>(null)
 	val networkConfig = MutableStateFlow(NetworkConfig())
+	val transferConfig = MutableStateFlow(TransferConfig())
 	val isCreatingFolder = MutableStateFlow(false)
 	val sharingFolder = MutableStateFlow("" to false)
 	val breadcrumb = MutableStateFlow<List<BreadcrumbItem>>(emptyList())

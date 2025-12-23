@@ -369,7 +369,7 @@ fun DirectTransferSendUI(
 										color = MaterialTheme.colorScheme.onSurface
 									)
 									Text(
-										device.tcpHost,
+										device.tcpHosts.first(),
 										style = TitleLineLarge.copy(fontSize = 15.sp, fontWeight = FontWeight.W400),
 										color = MaterialTheme.colorScheme.onSurface
 									)

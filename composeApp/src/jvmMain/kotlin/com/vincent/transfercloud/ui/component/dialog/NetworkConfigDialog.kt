@@ -83,7 +83,7 @@ fun NetworkConfigDialog(
                     portError = try {
                         val port = it.toInt()
                         port <= 0 || port > 65535
-                    } catch (e: NumberFormatException) {
+                    } catch (_: NumberFormatException) {
                         it.isNotEmpty()
                     }
                 },
@@ -149,7 +149,7 @@ fun NetworkConfigDialog(
                                     isReconnecting = true
                                     viewModel.setNetworkConfig(tempHost, port)
                                 }
-                            } catch (e: NumberFormatException) {
+                            } catch (_: NumberFormatException) {
 
                             }
                         }

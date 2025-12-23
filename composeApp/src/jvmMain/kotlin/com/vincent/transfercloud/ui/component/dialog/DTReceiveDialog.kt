@@ -169,7 +169,8 @@ fun TransferItem(
 				) {
 					Text(
 						text = transfer.fromName,
-						style = MaterialTheme.typography.titleMedium
+						style = MaterialTheme.typography.titleMedium,
+						color = MaterialTheme.colorScheme.onSurface
 					)
 
 					Row {
@@ -187,14 +188,14 @@ fun TransferItem(
 							Text(
 								text = "${timeAgo(transfer.transferTime)} | ",
 								style = MaterialTheme.typography.bodySmall,
-								color = MaterialTheme.colorScheme.onSurfaceVariant
+								color = MaterialTheme.colorScheme.onSurface
 							)
 						}
 
 						Text(
 							"${transfer.files.size} file${if (transfer.files.size > 1) "s" else ""}",
 							style = MaterialTheme.typography.bodySmall,
-							color = MaterialTheme.colorScheme.onSurfaceVariant,
+							color = MaterialTheme.colorScheme.onSurface,
 							modifier = Modifier.combinedClickable(
 								enabled = true,
 								indication = null,
@@ -221,7 +222,7 @@ fun TransferItem(
 						onDismissRequest = { showMenu = false }
 					) {
 						DropdownMenuItem(
-							text = { Text("View Files") },
+							text = { Text("View Files", color = MaterialTheme.colorScheme.onSurface) },
 							onClick = {
 								onExpandChange(!isExpanded)
 								showMenu = false
@@ -235,7 +236,7 @@ fun TransferItem(
 						)
 
 						DropdownMenuItem(
-							text = { Text("Open Location") },
+							text = { Text("Open Location", color = MaterialTheme.colorScheme.onSurface) },
 							onClick = {
 								showMenu = false
 								try {
@@ -253,7 +254,7 @@ fun TransferItem(
 						)
 
 						DropdownMenuItem(
-							text = { Text("Save to...") },
+							text = { Text("Save to...", color = MaterialTheme.colorScheme.onSurface) },
 							onClick = {
 								showMenu = false
 								showSaveDialog = true
@@ -269,7 +270,7 @@ fun TransferItem(
 						HorizontalDivider(Modifier, DividerDefaults.Thickness, DividerDefaults.color)
 
 						DropdownMenuItem(
-							text = { Text("Delete") },
+							text = { Text("Delete", color = MaterialTheme.colorScheme.onSurface) },
 							onClick = {
 								showMenu = false
 								onDelete()

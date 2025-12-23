@@ -1,7 +1,6 @@
 package com.vincent.transfercloud.ui.component.fileView
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -16,7 +15,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vincent.transfercloud.ui.state.AppState
@@ -24,14 +22,13 @@ import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.cursorHand
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
-import java.util.zip.ZipOutputStream
 
 @Composable
 fun FileDetailPanel(
 	appState: AppState = koinInject<AppState>(),
 	folderViewModel: FolderViewModel = koinViewModel()
 ) {
-	val selectedId by folderViewModel.selectedIds.collectAsState()
+	val selectedIds by folderViewModel.selectedIds.collectAsState()
 
 	Box(Modifier.fillMaxSize().animateContentSize()) {
 		Column(
@@ -41,8 +38,13 @@ fun FileDetailPanel(
 				Modifier.padding(start = 8.dp),
 				verticalAlignment = Alignment.CenterVertically
 			) {
+				val text = if (selectedIds.size > 1) {
+					"${selectedIds.size} items selected"
+				} else {
+					selectedIds.firstOrNull() ?: "No item selected"
+				}
 				Text(
-					selectedId.firstOrNull() ?: "No Item Selected",
+					text,
 					style = MaterialTheme.typography.titleMedium,
 					maxLines = 2,
 					overflow = TextOverflow.Ellipsis,

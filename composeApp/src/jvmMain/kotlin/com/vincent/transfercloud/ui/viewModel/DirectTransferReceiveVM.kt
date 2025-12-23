@@ -8,6 +8,7 @@ import com.vincent.transfercloud.core.server.DirectTransferDto
 import com.vincent.transfercloud.core.server.DirectTransferMeta
 import com.vincent.transfercloud.core.server.DirectTransferSend
 import com.vincent.transfercloud.ui.state.AppState
+import com.vincent.transfercloud.utils.getNetworkInterfaces
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.cio.*
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.io.IOException
 import java.io.File
 import java.net.BindException
-import java.net.InetAddress
 
 class DirectTransferReceiveVM(
 	private val appState: AppState
@@ -64,7 +64,7 @@ class DirectTransferReceiveVM(
 							fromAvatar = it.avatarUrl!!,
 							fromId = it.id,
 							fromDeviceName = System.getProperty("os.name"),
-							tcpHost = InetAddress.getLocalHost().hostAddress.toString(),
+							tcpHosts = getNetworkInterfaces().map { host -> host.toString().removePrefix("/") },
 							tcpPort = transferSocket!!.localAddress.port(),
 						)
 					}
@@ -99,19 +99,14 @@ class DirectTransferReceiveVM(
 					val metaDto = json.decodeFromString<DirectTransferMeta>(meta)
 					val outputFile = File(file, metaDto.fileName)
 					val writeChanel = outputFile.writeChannel()
-					val start = System.currentTimeMillis()
 					receiveChannel.copyTo(writeChanel, limit = metaDto.fileSize)
 					writeChanel.flushAndClose()
 					fileDirs.add(outputFile.absolutePath)
-					println("Saved: ${outputFile.absolutePath} in ${System.currentTimeMillis() - start}ms")
 				}
 				_receivedData.update { currentMap ->
 					receivedDto.files = fileDirs
 					currentMap + (receivedDto.id to receivedDto)
 				}
-
-				println("CurentSize: ${_receivedData.value.size}")
-				println("Received direct transfer data: $receivedDto")
 			}
 
 			receiveChannel.cancel(IOException())

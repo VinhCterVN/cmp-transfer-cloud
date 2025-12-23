@@ -27,7 +27,7 @@ open class BaseSocketViewModel(
 		payload: T,
 		crossinline onSuccess: suspend (SocketResponse) -> Unit,
 		crossinline onError: suspend (String) -> Unit
-	) = viewModelScope.launch {
+	) = viewModelScope.launch(Dispatchers.IO) {
 		try {
 			val jsonPayload = json.encodeToString(payload)
 			val req = SocketRequest(
@@ -49,7 +49,7 @@ open class BaseSocketViewModel(
 			}
 
 		} catch (e: Exception) {
-			onError("Socket error: ${e.message}")
+			onError("Socket error: ${e.message} - ${e.javaClass.name}")
 		}
 	}
 
