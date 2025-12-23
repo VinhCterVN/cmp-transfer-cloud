@@ -11,12 +11,14 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.vincent.transfercloud.utils.cursorHand
 
 @Composable
 fun FileOptionMenu(
 	expanded: Boolean,
+	offset: DpOffset = DpOffset.Zero,
 	onDismissRequest: () -> Unit,
 	onRename: () -> Unit,
 	onShare: () -> Unit,
@@ -26,6 +28,7 @@ fun FileOptionMenu(
 ) {
 	DropdownMenu(
 		expanded = expanded,
+		offset = offset,
 		onDismissRequest = onDismissRequest,
 		modifier = Modifier.widthIn(min = 200.dp),
 		shape = RoundedCornerShape(8.dp)

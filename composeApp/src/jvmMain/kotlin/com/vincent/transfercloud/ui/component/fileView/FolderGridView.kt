@@ -55,6 +55,7 @@ import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.cursorHand
+import com.vincent.transfercloud.utils.detechMouseClick
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
@@ -167,7 +168,7 @@ fun ColumnScope.FolderGridView(
 						}
 						Card(
 							shape = RoundedCornerShape(12.dp),
-							elevation = CardDefaults.cardElevation(2.dp),
+							elevation = CardDefaults.cardElevation(4.dp),
 							colors = CardDefaults.cardColors(
 								containerColor = when {
 									isHovered || isSelected -> MaterialTheme.colorScheme.primaryContainer
@@ -218,7 +219,7 @@ fun ColumnScope.FolderGridView(
 										viewModel.toggleSelection(folder.id, isCtrlPressed)
 									},
 									onDoubleClick = { navigator.push(FolderDetailView(folder.id)) },
-								),
+								).detechMouseClick(onRightClick = { openMenuFolderId = folder.id })
 						) {
 							Row(
 								Modifier.fillMaxSize().padding(horizontal = 12.dp),
@@ -317,7 +318,7 @@ fun ColumnScope.FolderGridView(
 						}
 
 						Card(
-							elevation = CardDefaults.cardElevation(2.dp),
+							elevation = CardDefaults.cardElevation(4.dp),
 							shape = RoundedCornerShape(12.dp),
 							colors = CardDefaults.cardColors(
 								containerColor = when {
@@ -354,7 +355,7 @@ fun ColumnScope.FolderGridView(
 										viewModel.toggleSelection(file.id, isCtrlPressed)
 									},
 									onDoubleClick = {}
-								)
+								).detechMouseClick(onRightClick = { openMenuFolderId = file.id })
 						) {
 							Column(
 								Modifier.fillMaxSize().padding(8.dp)

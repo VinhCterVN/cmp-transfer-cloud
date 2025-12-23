@@ -103,9 +103,7 @@ fun AppSettingsDialog(
 								onClick = {
 									if (!portError) {
 										val port = tempPort.toInt()
-										if (tempHost != networkConfig.value.host || port != networkConfig.value.port) {
-											scope.launch {viewModel.setNetworkConfig(tempHost, port) }
-										}
+										scope.launch {viewModel.setNetworkConfig(tempHost, port) }
 									}
 								}
 							))

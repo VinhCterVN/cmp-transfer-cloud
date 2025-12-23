@@ -28,6 +28,14 @@ data class FolderWithContentsDto(
 )
 
 @Serializable
+data class FolderDownloadMetadata(
+    val message: String,
+    val folderName: String,
+    val serverHost: String,
+    val serverPort: Int,
+)
+
+@Serializable
 data class BreadcrumbItem(
     val id: String,
     val name: String

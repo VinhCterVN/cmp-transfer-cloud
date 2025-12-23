@@ -7,7 +7,9 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -18,21 +20,37 @@ fun Modifier.dashedBorder(
 	dashLength: Dp = 10.dp,
 	gapLength: Dp = 10.dp
 ): Modifier = this.then(
-    Modifier.drawBehind {
-        val stroke = Stroke(
-	        width = strokeWidth.toPx(),
-	        pathEffect = PathEffect.dashPathEffect(
-		        floatArrayOf(dashLength.toPx(), gapLength.toPx()), 0f
-	        )
-        )
+	Modifier.drawBehind {
+		val stroke = Stroke(
+			width = strokeWidth.toPx(),
+			pathEffect = PathEffect.dashPathEffect(
+				floatArrayOf(dashLength.toPx(), gapLength.toPx()), 0f
+			)
+		)
 
-        drawRoundRect(
-            color = color,
-            size = Size(size.width - strokeWidth.toPx(), size.height - strokeWidth.toPx()),
-            cornerRadius = CornerRadius(cornerRadius.toPx()),
-            style = stroke
-        )
-    }
+		drawRoundRect(
+			color = color,
+			size = Size(size.width - strokeWidth.toPx(), size.height - strokeWidth.toPx()),
+			cornerRadius = CornerRadius(cornerRadius.toPx()),
+			style = stroke
+		)
+	}
 )
 
 fun Modifier.cursorHand(): Modifier = this.pointerHoverIcon(androidx.compose.ui.input.pointer.PointerIcon.Hand)
+
+fun Modifier.detechMouseClick(
+	onRightClick: () -> Unit = {}
+): Modifier = this.pointerInput(Unit) {
+	awaitPointerEventScope {
+		while (true) {
+			val event = awaitPointerEvent()
+			val change = event.changes.first()
+
+			if (change.pressed && event.buttons.isSecondaryPressed) {
+				onRightClick()
+				change.consume()
+			}
+		}
+	}
+}

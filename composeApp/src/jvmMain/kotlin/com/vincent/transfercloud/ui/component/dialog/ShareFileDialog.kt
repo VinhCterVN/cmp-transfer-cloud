@@ -1,8 +1,9 @@
 package com.vincent.transfercloud.ui.component.dialog
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -66,7 +67,10 @@ fun ShareFileDialog(
 	var selectedPermission by remember { mutableStateOf(SharePermission.VIEW) }
 	val searchBoxHeight by animateDpAsState(
 		targetValue = if (expanded && searchQuery.isNotBlank()) 200.dp else 56.dp,
-		animationSpec = tween(durationMillis = 300),
+		animationSpec = spring(
+			dampingRatio = Spring.DampingRatioLowBouncy,
+			stiffness = Spring.StiffnessLow
+		),
 		label = "searchHeight"
 	)
 
@@ -75,7 +79,7 @@ fun ShareFileDialog(
 			.onEach {
 				if (it.isNotBlank()) viewModel.setUIState(UIState.Loading)
 			}
-			.debounce(500)
+			.debounce(2000)
 			.collect { latest ->
 				if (latest.isNotBlank()) viewModel.searchUsersByEmail(latest)
 				viewModel.setUIState(UIState.Ready)
@@ -106,7 +110,12 @@ fun ShareFileDialog(
 					.width(500.dp)
 					.heightIn(max = maxHeight)
 					.wrapContentHeight()
-					.animateContentSize(),
+					.animateContentSize(
+						animationSpec = spring(
+							dampingRatio = Spring.DampingRatioLowBouncy,
+							stiffness = Spring.StiffnessLow
+						)
+					),
 				shape = RoundedCornerShape(12.dp),
 				color = MaterialTheme.colorScheme.surface,
 				tonalElevation = 6.dp
@@ -159,12 +168,13 @@ fun ShareFileDialog(
 									selected = selectedPermission == permission,
 									onClick = { selectedPermission = permission },
 									label = { Text(permission.name) },
+									elevation = null,
 									colors = FilterChipDefaults.filterChipColors(
 										selectedContainerColor = when (permission) {
 											SharePermission.VIEW -> MaterialTheme.colorScheme.primaryContainer
 											SharePermission.EDIT -> MaterialTheme.colorScheme.secondaryContainer
 											SharePermission.OWNER -> MaterialTheme.colorScheme.tertiaryContainer
-										}
+										},
 									)
 								)
 							}
@@ -243,7 +253,7 @@ fun ShareFileDialog(
 												supportingContent = { Text(user.email, style = MaterialTheme.typography.bodySmall) },
 												colors = ListItemDefaults.colors(containerColor = Color.Transparent),
 												modifier = Modifier.clickable {
-													searchQuery = ""
+													searchQuery = user.email
 													expanded = false
 												}
 											)

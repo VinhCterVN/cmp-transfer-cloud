@@ -7,6 +7,7 @@ import com.vincent.transfercloud.data.repository.FolderRepository
 import com.vincent.transfercloud.data.repository.UserRepository
 import com.vincent.transfercloud.utils.json
 import io.ktor.network.sockets.*
+import io.ktor.util.network.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ class ClientHandler(
 
 	init {
 		println("ClientHandler initialized for ${socket.remoteAddress}")
+		ClientDownloadHandler.init()
 	}
 
 	fun start() = scope.launch(Dispatchers.IO) {
@@ -442,7 +444,6 @@ class ClientHandler(
 						shareIds = fileReq.shareIds,
 						storagePath = "${fileReq.ownerId}/$encPath"
 					)
-					file?.thumbnailBytes = createFileThumbnailBytes(fileReq.fileName, fileReq.ownerId, encPath, null)
 					val response = CreateFileResponseDto(
 						file = file,
 						status = if (file != null) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
@@ -506,28 +507,11 @@ class ClientHandler(
 				}
 			}
 
-			if (success) {
-				send(
-					SocketResponse(
-						status = ResponseStatus.SUCCESS,
-						message = "${req.resource.capitalize()} deleted successfully"
-					)
-				)
-			} else {
-				send(
-					SocketResponse(
-						status = ResponseStatus.ERROR,
-						message = "Failed to delete ${req.resource}"
-					)
-				)
-			}
+			if (success) send(SocketResponse(ResponseStatus.SUCCESS, "${req.resource.capitalize()} deleted successfully"))
+			else send(SocketResponse(ResponseStatus.ERROR, "Failed to delete ${req.resource}"))
+
 		} catch (e: Exception) {
-			send(
-				SocketResponse(
-					status = ResponseStatus.ERROR,
-					message = "Delete failed: ${e.message}"
-				)
-			)
+			send(SocketResponse(ResponseStatus.ERROR, "Delete failed: ${e.message}"))
 		}
 	}
 
@@ -581,6 +565,21 @@ class ClientHandler(
 							data = json.encodeToString(resource)
 						)
 					)
+				}
+
+				"folder" -> {
+					val folderRecord = FolderRepository.getFolderById(req.id, req.ownerId)
+					assert(folderRecord != null) { "Folder with ID ${req.id} not found." }
+					val address = ClientDownloadHandler.getAddress()
+					if (address == null) ClientDownloadHandler.initSocket()
+					val payload = FolderDownloadMetadata(
+						"READY",
+						folderRecord!!.folder.name,
+						address!!.toJavaAddress().hostname,
+						address.toJavaAddress().port
+					)
+					send(SocketResponse(ResponseStatus.SUCCESS, "Folder download ready", json.encodeToString(payload)))
+					ClientDownloadHandler.handleClientDownload(folderRecord.folder.id)
 				}
 
 				else -> {

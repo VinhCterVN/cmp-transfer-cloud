@@ -8,13 +8,17 @@ import com.vincent.transfercloud.data.dto.SocketRequest
 import com.vincent.transfercloud.data.dto.SocketRequestType
 import com.vincent.transfercloud.data.dto.SocketResponse
 import com.vincent.transfercloud.ui.state.AppState
+import io.ktor.network.selector.ActorSelectorManager
+import io.ktor.network.selector.SelectorManager
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
 open class BaseSocketViewModel(
 	protected val appState: AppState
 ) : ViewModel() {
+	protected val selectorManager: SelectorManager = ActorSelectorManager(Dispatchers.IO)
 	protected val sendChannel get() = appState.clientSocketWriteChannel
 	protected val receiveChannel get() = appState.clientSocketReadChannel
 

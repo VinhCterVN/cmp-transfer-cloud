@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowLeft
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -141,20 +142,25 @@ fun FileChainView(
 			}
 		}
 
-		SingleChoiceSegmentedButtonRow {
-			options.forEachIndexed { index, icon ->
-				SegmentedButton(
-					onClick = icon.onClick,
-					selected = icon.selected(),
-					label = { Icon(if (icon.selected()) icon.selectedIcon else icon.icon, null) },
-					colors = SegmentedButtonDefaults.colors(
-						activeContainerColor = MaterialTheme.colorScheme.primaryContainer
-					),
-					shape = SegmentedButtonDefaults.itemShape(
-						index = index,
-						count = options.size
-					),
-				)
+		Row {
+			IconButton(onClick = {appState.fileDetailShow.value = true}) {
+				Icon(Icons.AutoMirrored.Default.ArrowLeft, null)
+			}
+			SingleChoiceSegmentedButtonRow {
+				options.forEachIndexed { index, icon ->
+					SegmentedButton(
+						onClick = icon.onClick,
+						selected = icon.selected(),
+						label = { Icon(if (icon.selected()) icon.selectedIcon else icon.icon, null) },
+						colors = SegmentedButtonDefaults.colors(
+							activeContainerColor = MaterialTheme.colorScheme.primaryContainer
+						),
+						shape = SegmentedButtonDefaults.itemShape(
+							index = index,
+							count = options.size
+						),
+					)
+				}
 			}
 		}
 	}

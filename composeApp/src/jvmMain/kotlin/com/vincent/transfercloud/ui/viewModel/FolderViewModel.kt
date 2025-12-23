@@ -11,6 +11,8 @@ import io.github.vinceglb.filekit.FileKit
 import io.github.vinceglb.filekit.absolutePath
 import io.github.vinceglb.filekit.dialogs.openFileSaver
 import io.github.vinceglb.filekit.write
+import io.ktor.network.sockets.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,13 +43,18 @@ class FolderViewModel(
 	val thumbnailSemaphore = Semaphore(1)
 
 	init {
-		viewModelScope.launch {
+		viewModelScope.launch(Dispatchers.IO) {
+			loadTempFiles()
+			println("Loaded ${_tempFiles.value.size} temporary thumbnail files")
 			appState.currentFolder.collect { newId ->
 				if (newId.isNotEmpty()) getFolderData(newId)
 			}
 		}
-		viewModelScope.launch { _tempFiles.value = ThumbnailHelper.load() }
 	}
+
+	suspend fun loadTempFiles() = viewModelScope.launch(Dispatchers.IO) {
+		_tempFiles.value = ThumbnailHelper.load()
+	}.join()
 
 	fun setSelectedIds(ids: Set<String>) {
 		_selectedIds.value = ids
@@ -70,7 +77,7 @@ class FolderViewModel(
 	}
 
 	fun emitSharingItem(id: String, isFolder: Boolean) {
-		appState.sharingFolder.value = id  to isFolder
+		appState.sharingFolder.value = id to isFolder
 	}
 
 	fun startDragging(item: Pair<String, FolderObject>) {
@@ -125,9 +132,9 @@ class FolderViewModel(
 				folderData.value = data.data?.copy(
 					subfolders = data.data?.subfolders?.sortedBy { it.name } ?: emptyList(),
 				)
-				viewModelScope.launch {
+				viewModelScope.launch(Dispatchers.IO) {
 					data.data?.files?.filter { it.hasThumbnail }?.forEach { file ->
-						launch {
+						launch(Dispatchers.IO) {
 							thumbnailSemaphore.withPermit {
 								getThumbnail(file.id, file.ownerId).join()
 							}
@@ -250,10 +257,16 @@ class FolderViewModel(
 			),
 			onSuccess = { res ->
 				val newFile: CreateFileResponseDto = json.decodeFromString<CreateFileResponseDto>(res.data!!)
+				if (newFile.file == null) {
+					println("File upload failed: ${newFile.message}")
+					return@sendRequest
+				}
 				folderData.value = folderData.value?.copy(
 					files = folderData.value?.files!!.plus(newFile.file!!)
 				)
-				if (newFile.file!!.hasThumbnail) saveThumbnail(newFile.file!!.id, newFile.file?.thumbnailBytes)
+				if (newFile.file!!.hasThumbnail) launch(Dispatchers.IO) {
+					thumbnailSemaphore.withPermit { getThumbnail(newFile.file!!.id, newFile.file!!.ownerId).join() }
+				}
 
 				println("File uploaded successfully: ${newFile.message}")
 			},
@@ -280,6 +293,44 @@ class FolderViewModel(
 	}
 
 	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch {
+		sendRequest(
+			type = SocketRequestType.DOWNLOAD,
+			payload = DownloadRequest(resource = "folder", id = folder.id, ownerId = folder.ownerId),
+			onSuccess = { res ->
+				val data = json.decodeFromString<FolderDownloadMetadata>(res.data!!)
+				println(data)
+
+				if (data.message == "READY") {
+					handleDownloadFolder(data)
+				}
+			},
+			onError = { msg ->
+				println("Error downloading folder: $msg")
+			}
+		)
+	}
+
+	private fun handleDownloadFolder(data: FolderDownloadMetadata) = viewModelScope.launch {
+		var socket: Socket? = null
+		try {
+			socket = aSocket(selectorManager).tcp().connect(data.serverHost, data.serverPort)
+			val readCharnel = socket.openReadChannel()
+			val destFile = FileKit.openFileSaver(suggestedName = data.folderName, extension = "zip")?.file
+			if (destFile == null) {
+				println("Download cancelled by user.")
+				socket.close()
+				return@launch
+			}
+			val inputStream = readCharnel.toInputStream()
+			destFile.outputStream().use { output ->
+				inputStream.copyTo(output)
+			}
+			println("Folder downloaded successfully: ${destFile.absolutePath}")
+		} catch (e: Exception) {
+			println("Error connecting to download server: ${e.message}")
+		} finally {
+			socket?.close()
+		}
 	}
 
 	fun findItemMetadata(id: String, isFolder: Boolean): Triple<String, String, String> {
@@ -293,7 +344,6 @@ class FolderViewModel(
 	override fun onCleared() {
 		super.onCleared()
 		ThumbnailHelper.save(_tempFiles.value)
-		_tempFiles.value.forEach { (_, file) -> file.delete() }
 	}
 
 	fun getThumbnail(fileId: String, ownerId: String) = viewModelScope.launch {

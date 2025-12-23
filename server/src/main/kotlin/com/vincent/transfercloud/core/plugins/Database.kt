@@ -9,7 +9,7 @@ import javax.xml.crypto.Data
 
 fun configDatabase() {
 	Database.connect(
-		url = "jdbc:postgresql://ep-quiet-term-a1luua4r-pooler.ap-southeast-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_B4Ar0OgtMIJR&sslmode=require&channelBinding=require",
+		url = "jdbc:postgresql://ep-quiet-term-a1luua4r-pooler.ap-southeast-1.aws.neon.tech/neondb?user=neondb_owner&password=npg_B4Ar0OgtMIJR&sslmode=require&channelBinding=require&options=-c%20timezone=Asia/Ho_Chi_Minh",
 		driver = "org.postgresql.Driver",
 	)
 

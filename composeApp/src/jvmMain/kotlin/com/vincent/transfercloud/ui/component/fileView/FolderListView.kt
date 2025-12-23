@@ -57,6 +57,7 @@ import com.vincent.transfercloud.ui.theme.TitleLineBig
 import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.utils.cursorHand
+import com.vincent.transfercloud.utils.detechMouseClick
 import com.vincent.transfercloud.utils.formatIsoToMonthDay
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -252,7 +253,7 @@ fun ColumnScope.FolderListView(
 						}
 						Row(
 							modifier = Modifier
-								.fillMaxWidth()
+								.fillMaxWidth().cursorHand()
 								.background(
 									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
 									else if (index % 2 == 0) Color.Transparent
@@ -289,6 +290,7 @@ fun ColumnScope.FolderListView(
 										scope.launch { navigator.push(FolderDetailView(folder.id)) }
 									},
 								)
+								.detechMouseClick(onRightClick = { openMenuFolderId = folder.id })
 								.graphicsLayer {
 									alpha = animatedProgress.value
 									val scale = 0.8f + (0.2f * animatedProgress.value)
@@ -337,7 +339,8 @@ fun ColumnScope.FolderListView(
 										fontSize = 15.sp
 									),
 									maxLines = 1,
-									overflow = TextOverflow.Ellipsis
+									overflow = TextOverflow.Ellipsis,
+									modifier = Modifier.padding(12.dp)
 								)
 							}
 							Row(
@@ -485,7 +488,7 @@ fun ColumnScope.FolderListView(
 
 						Row(
 							modifier = Modifier
-								.fillMaxWidth()
+								.fillMaxWidth().cursorHand()
 //								.clip(RoundedCornerShape(8.dp))
 								.combinedClickable(
 									onClick = {
@@ -494,6 +497,7 @@ fun ColumnScope.FolderListView(
 									},
 									onDoubleClick = {/*TODO: IMPLEMENT FILE PREVIEW*/ }
 								)
+								.detechMouseClick(onRightClick = { openMenuFolderId = file.id })
 								.background(
 									if (isSelected) MaterialTheme.colorScheme.surfaceVariant
 									else if (index % 2 == 0) Color.Transparent
@@ -551,7 +555,8 @@ fun ColumnScope.FolderListView(
 										fontSize = 15.sp
 									),
 									maxLines = 1,
-									overflow = TextOverflow.Ellipsis
+									overflow = TextOverflow.Ellipsis,
+									modifier = Modifier.padding(end = 12.dp)
 								)
 							}
 							// Owner column

@@ -19,7 +19,6 @@ class AppViewModel(
 	appState: AppState
 ) : BaseSocketViewModel(appState) {
 	private var password: String? = null
-	private val selectorManager: SelectorManager = ActorSelectorManager(Dispatchers.IO)
 	private val socket = appState.clientSocket
 	private var reconnectJob: Job? = null
 	private var heartbeatJob: Job? = null
@@ -175,10 +174,6 @@ class AppViewModel(
 	fun setNetworkConfig(host: String, port: Int) {
 		val newConfig = NetworkConfig(host, port)
 		println("Setting new network config: $newConfig")
-//		appState.networkConfig.value = appState.networkConfig.value.copy(
-//			host = host,
-//			port = port
-//		)
 		appState.networkConfig.value = newConfig
 	}
 }

@@ -2,10 +2,7 @@
 
 package com.vincent.transfercloud.data.repository
 
-import com.vincent.transfercloud.data.dto.BreadcrumbItem
-import com.vincent.transfercloud.data.dto.FolderOutputDto
-import com.vincent.transfercloud.data.dto.FolderWithContentsDto
-import com.vincent.transfercloud.data.dto.ShareMetadata
+import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.data.enum.SharePermission
 import com.vincent.transfercloud.data.schema.Files
 import com.vincent.transfercloud.data.schema.Folders
@@ -16,6 +13,8 @@ import com.vincent.transfercloud.utils.toFileOutputDto
 import com.vincent.transfercloud.utils.toFolderOutputDto
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.statements.StatementType
+import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.util.*
 import kotlin.time.ExperimentalTime
@@ -138,5 +137,51 @@ object FolderRepository {
 					sharedAt = it[Shares.createdAt].toString()
 				)
 			}
+	}
+
+	fun getAllFilesWithCTE(rootFolderId: UUID): List<FileEntry> = transaction {
+		// 1. Dùng tham số trực tiếp trong chuỗi (nhưng nhớ ép kiểu ::uuid cho chuẩn PostgreSQL)
+		val sql = """
+      WITH RECURSIVE folder_tree AS (
+          SELECT id, name, CAST(name AS TEXT) as relative_path 
+          FROM folders 
+          WHERE id = '$rootFolderId'::uuid
+      
+          UNION ALL
+          
+          SELECT f.id, f.name, CAST(ft.relative_path || '/' || f.name AS TEXT) 
+          FROM folders f
+          INNER JOIN folder_tree ft ON f.parent_id = ft.id
+      )
+      SELECT 
+          files.id as file_id,
+          files.storage_path,
+          files.name as file_name,
+          folder_tree.relative_path
+      FROM files
+      INNER JOIN folder_tree ON files.folder_id = folder_tree.id;
+      """.trimIndent()
+		val result = TransactionManager.current().exec(
+			stmt = sql,
+			explicitStatementType = StatementType.SELECT // <--- QUAN TRỌNG: Dòng này sửa lỗi của bạn
+		) { rs ->
+			val results = mutableListOf<FileEntry>()
+			while (rs.next()) {
+				val fileName = rs.getString("file_name")
+				val folderPath = rs.getString("relative_path")
+				val fullZipPath = "$folderPath/$fileName"
+
+				results.add(
+					FileEntry(
+						fileId = rs.getString("file_id"),
+						storagePath = rs.getString("storage_path"),
+						entryPath = fullZipPath
+					)
+				)
+			}
+			results
+		}
+		// Nếu exec trả về null thì trả về list rỗng
+		result ?: emptyList()
 	}
 }

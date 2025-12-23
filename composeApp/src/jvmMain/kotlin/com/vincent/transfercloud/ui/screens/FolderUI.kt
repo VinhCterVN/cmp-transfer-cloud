@@ -103,16 +103,16 @@ fun FolderUI(
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
 					val pending = files.first() as File
-//					if (pending.length() > 10 * 1024 * 1024) {
-//						scope.launch {
-//							scaffoldState.snackbarHostState.showSnackbar(
-//								"File size exceeds 10MB limit.",
-//								actionLabel = "Hide",
-//								duration = SnackbarDuration.Short
-//							)
-//						}
-//						return false
-//					}
+					if (pending.length() > 10 * 1024 * 1024) {
+						scope.launch {
+							scaffoldState.snackbarHostState.showSnackbar(
+								"File size exceeds 10MB limit.",
+								actionLabel = "Hide",
+								duration = SnackbarDuration.Short
+							)
+						}
+						return false
+					}
 					uploadingFile = pending
 				}
 				return true

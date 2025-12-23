@@ -24,7 +24,7 @@ object ThumbnailHelper {
 
 	fun load(): Map<String, File> {
 		if (!configFile.exists()) return emptyMap()
-
+		println("Loading thumbnail config from ${configFile.absolutePath}")
 		return try {
 			val config = json.decodeFromString<ThumbnailConfig>(configFile.readText())
 			config.files.mapNotNull { (id, path) ->

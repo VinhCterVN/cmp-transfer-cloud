@@ -123,8 +123,13 @@ fun FileUploadDialog(
 								contentDescription = null,
 								modifier = Modifier.size(36.dp),
 							)
-							Text(uploadFile.name, style = MessageStyle, maxLines = 1, overflow = TextOverflow.Ellipsis)
-							Spacer(Modifier.weight(1f))
+							Text(
+								uploadFile.name,
+								style = MessageStyle,
+								maxLines = 1,
+								overflow = TextOverflow.Ellipsis,
+								modifier = Modifier.weight(1f)
+							)
 							Text(formatFileSize(uploadFile.length()), style = MessageStyle, maxLines = 1)
 						}
 					}
@@ -240,12 +245,8 @@ fun FileUploadDialog(
 												modifier = Modifier.size(36.dp).clip(CircleShape)
 											)
 										},
-										headlineContent = {
-											Text(user.fullName, style = TitleLineLarge)
-										},
-										supportingContent = {
-											Text(user.email, style = LabelLineMedium)
-										},
+										headlineContent = { Text(user.fullName, style = MaterialTheme.typography.bodyMedium) },
+										supportingContent = { Text(user.email, style = MaterialTheme.typography.bodySmall) },
 										trailingContent = {
 											TextButton(
 												onClick = {

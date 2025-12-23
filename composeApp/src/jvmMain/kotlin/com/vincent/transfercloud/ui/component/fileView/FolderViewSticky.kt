@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -35,7 +36,7 @@ fun FolderStickyHeaderContent(
 			.clip(CircleShape)
 	) {
 		Row(
-			modifier = Modifier.fillMaxSize(),
+			modifier = Modifier.fillMaxWidth().height(48.dp),
 			verticalAlignment = Alignment.CenterVertically,
 			horizontalArrangement = Arrangement.spacedBy(4.dp)
 		) {
@@ -53,6 +54,8 @@ fun FolderStickyHeaderContent(
 
 			Text(
 				"Selected $count item${if (count != 1) "s" else ""}",
+				maxLines = 1,
+				overflow = TextOverflow.Ellipsis,
 				style = MaterialTheme.typography.titleMedium
 			)
 
@@ -63,7 +66,7 @@ fun FolderStickyHeaderContent(
 				},
 				state = rememberTooltipState()
 			) {
-				IconButton({}) {
+				IconButton({if (ids.size > 1) null}) {
 					Icon(Icons.Default.PersonAdd, null, Modifier.size(20.dp))
 				}
 			}
