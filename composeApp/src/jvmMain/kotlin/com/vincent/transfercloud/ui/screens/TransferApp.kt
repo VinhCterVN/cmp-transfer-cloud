@@ -20,7 +20,6 @@ import androidx.compose.ui.input.pointer.PointerIcon
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.WindowState
 import cafe.adriel.voyager.navigator.Navigator
 import cafe.adriel.voyager.transitions.SlideTransition
 import com.vincent.transfercloud.ui.component.HeaderBar
@@ -28,6 +27,7 @@ import com.vincent.transfercloud.ui.component.SideBar
 import com.vincent.transfercloud.ui.component.fileView.FileDetailPanel
 import com.vincent.transfercloud.ui.navigation.DirectTransferReceiveScreen
 import com.vincent.transfercloud.ui.navigation.FolderDetailView
+import com.vincent.transfercloud.ui.navigation.ShareWithMe
 import com.vincent.transfercloud.ui.state.AppState
 import org.jetbrains.compose.splitpane.ExperimentalSplitPaneApi
 import org.jetbrains.compose.splitpane.HorizontalSplitPane
@@ -40,9 +40,7 @@ import java.awt.Cursor
 fun TransferApp(
 	appState: AppState = koinInject<AppState>()
 ) {
-	val windowState = koinInject<WindowState>()
 	val splitterState = rememberSplitPaneState()
-	val secondSplitterState = rememberSplitPaneState()
 	val currentTab by appState.currentTab.collectAsState()
 	val currentUser by appState.currentUser.collectAsState()
 	val fileDetailShow by appState.fileDetailShow.collectAsState()
@@ -63,7 +61,7 @@ fun TransferApp(
 				when (currentTab) {
 					AppState.AppTab.HOME -> HomeUI()
 					AppState.AppTab.MY_DRIVE -> currentUser?.rootFolderId?.let { Navigator(FolderDetailView(it)) }
-					AppState.AppTab.SHARED -> ShareScreen()
+					AppState.AppTab.SHARED -> Navigator(ShareWithMe)
 					AppState.AppTab.TRANSFER -> Navigator(DirectTransferReceiveScreen) { SlideTransition(it) }
 					AppState.AppTab.TRASH -> {}
 				}
@@ -79,8 +77,7 @@ fun TransferApp(
 					MaterialTheme.colorScheme.secondaryContainer.copy(0.45f),
 				)
 			)
-		)
-			.padding(8.dp),
+		).padding(8.dp),
 		verticalArrangement = Arrangement.spacedBy(8.dp)
 	) {
 		HeaderBar()
@@ -90,24 +87,10 @@ fun TransferApp(
 			}
 
 			second(400.dp) {
-				val minSize = windowState.size.width - (250.dp + 250.dp + 48.dp)
-				if (fileDetailShow)
-					HorizontalSplitPane(splitPaneState = secondSplitterState) {
-						first(minSize = minSize) {
-							mainContent()
-						}
-						second(100.dp) {
-							Card(
-								Modifier.fillMaxSize().padding(top = 8.dp, end = 8.dp, bottom = 8.dp),
-								shape = RoundedCornerShape(12.dp),
-								elevation = CardDefaults.cardElevation(2.dp),
-								colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-							) {
-								FileDetailPanel()
-							}
-						}
-					}
-				else mainContent()
+				RightContentArea(
+					fileDetailShow = fileDetailShow,
+					mainContent = mainContent
+				)
 			}
 
 			splitter {
@@ -127,5 +110,49 @@ fun TransferApp(
 				}
 			}
 		}
+	}
+}
+
+@OptIn(ExperimentalSplitPaneApi::class)
+@Composable
+private fun RightContentArea(
+	fileDetailShow: Boolean,
+	mainContent: @Composable () -> Unit
+) {
+	if (!fileDetailShow) {
+		mainContent()
+		return
+	}
+
+	BoxWithConstraints(Modifier.fillMaxSize()) {
+		val availableWidth = maxWidth
+		val firstPaneMinSize = remember(availableWidth) {
+			(availableWidth - 300.dp).coerceAtLeast(400.dp)
+		}
+
+		if (availableWidth >= 700.dp) {
+			val secondSplitterState = rememberSplitPaneState()
+
+			HorizontalSplitPane(splitPaneState = secondSplitterState) {
+				first(minSize = firstPaneMinSize) {
+					mainContent()
+				}
+
+				second(minSize = 250.dp) {
+					Card(
+						Modifier.fillMaxSize().padding(top = 8.dp, end = 8.dp, bottom = 8.dp),
+						shape = RoundedCornerShape(12.dp),
+						elevation = CardDefaults.cardElevation(2.dp),
+						colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+					) {
+						FileDetailPanel()
+					}
+				}
+
+				splitter {
+					visiblePart { Box(Modifier.width(1.dp).fillMaxHeight().background(Color.LightGray)) }
+				}
+			}
+		} else mainContent()
 	}
 }

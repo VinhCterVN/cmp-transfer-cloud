@@ -11,7 +11,7 @@ data class GetFolderContentsRequestDto(
 )
 
 @Serializable
-data class GetSharedDataRequest(
+data class GetSharedDataResponse(
 	val status: ResponseStatus,
 	val message: String,
 	val folders: List<FolderOutputDto>,

@@ -257,7 +257,7 @@ class ClientHandler(
 					val ownerId = req.ownerId ?: userId!!
 					val sharedFolders = FolderRepository.getFoldersSharedWithUser(ownerId)
 					val sharedFiles = FileRepository.getFilesSharedWithUser(ownerId)
-					val response = GetSharedDataRequest(
+					val response = GetSharedDataResponse(
 						status = if (sharedFolders.isNotEmpty() || sharedFiles.isNotEmpty()) ResponseStatus.SUCCESS else ResponseStatus.ERROR,
 						message = if (sharedFolders.isNotEmpty() || sharedFiles.isNotEmpty()) "Shared data retrieved" else "No shared data found",
 						folders = sharedFolders,

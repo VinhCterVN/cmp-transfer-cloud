@@ -37,7 +37,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.pointer.PointerKeyboardModifiers
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.isMetaPressed
+import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.TextStyle
@@ -399,7 +402,20 @@ fun ColumnScope.FolderListView(
 									onRename = { openMenuFolderId = null },
 									onMove = { openMenuFolderId = null },
 									onShare = { openMenuFolderId = null; viewModel.emitSharingItem(folder.id, true) },
-									onDownload = {},
+									onDownload = {
+										scope.launch {
+											openMenuFolderId = null
+											bottomSheetState.snackbarHostState.showSnackbar(
+												"${folder.name} is being prepared for download.",
+												duration = SnackbarDuration.Short,
+											)
+											viewModel.downloadFolder(folder).join()
+											bottomSheetState.snackbarHostState.showSnackbar(
+												"${folder.name} has been downloaded.",
+												duration = SnackbarDuration.Short,
+											)
+										}
+									},
 									onDelete = {
 										scope.launch {
 											openMenuFolderId = null

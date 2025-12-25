@@ -1,6 +1,7 @@
 package com.vincent.transfercloud.data.dto
 
 import com.vincent.transfercloud.data.enum.FileLocation
+import com.vincent.transfercloud.data.enum.SharePermission
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -27,7 +28,9 @@ data class FileOutputDto(
 	val location: FileLocation,
 	var hasThumbnail: Boolean = false,
 	val createdAt: String,
-	val updatedAt: String
+	val updatedAt: String,
+	val sharedAt: String? = null,
+	val sharePermission: SharePermission? = null
 )
 
 @Serializable

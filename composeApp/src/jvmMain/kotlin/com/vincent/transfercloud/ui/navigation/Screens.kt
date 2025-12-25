@@ -7,6 +7,7 @@ import cafe.adriel.voyager.core.screen.uniqueScreenKey
 import com.vincent.transfercloud.ui.screens.DirectTransferUI
 import com.vincent.transfercloud.ui.screens.DirectTransferSendUI
 import com.vincent.transfercloud.ui.screens.FolderUI
+import com.vincent.transfercloud.ui.screens.ShareScreen
 import com.vincent.transfercloud.ui.screens.TransferApp
 import com.vincent.transfercloud.ui.screens.auth.AppGate
 
@@ -31,6 +32,14 @@ class FolderDetailView(val id: String) : Screen {
 
 	@Composable
 	override fun Content() = FolderUI(id = id)
+}
+
+object ShareWithMe : Screen {
+	override val key: ScreenKey = uniqueScreenKey
+	private fun readResolve(): Any = ShareWithMe
+
+	@Composable
+	override fun Content() = ShareScreen()
 }
 
 object DirectTransferReceiveScreen : Screen {

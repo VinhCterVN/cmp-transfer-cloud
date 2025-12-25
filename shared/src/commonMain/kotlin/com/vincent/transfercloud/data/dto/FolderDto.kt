@@ -1,5 +1,6 @@
 package com.vincent.transfercloud.data.dto
 
+import com.vincent.transfercloud.data.enum.SharePermission
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -17,7 +18,9 @@ data class FolderOutputDto(
     val ownerId: String,
     val parentId: String?,
     val createdAt: String,
-    val updatedAt: String
+    val updatedAt: String,
+    val sharedAt: String? = null,
+    val sharePermission: SharePermission? = null
 )
 
 @Serializable

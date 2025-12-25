@@ -74,7 +74,6 @@ fun FolderUI(
 	val isCreatingFolder by appState.isCreatingFolder.collectAsState()
 	val gridState = rememberLazyGridState()
 	val listState = rememberLazyListState()
-	val dynamicState = rememberLazyListState()
 	var showTargetBorder by remember { mutableStateOf(false) }
 	var uploadingFile by remember { mutableStateOf<File?>(null) }
 	val draggedItem by viewModel.draggedItem.collectAsState()
@@ -103,7 +102,7 @@ fun FolderUI(
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
 					val pending = files.first() as File
-					if (pending.length() > 10 * 1024 * 1024) {
+					if (pending.length() > 50 * 1024 * 1024) {
 						scope.launch {
 							scaffoldState.snackbarHostState.showSnackbar(
 								"File size exceeds 10MB limit.",
@@ -130,7 +129,7 @@ fun FolderUI(
 		val file = platformFile?.file
 		file?.let {
 			scope.launch {
-				if (it.length() > 10 * 1024 * 1024) {
+				if (it.length() > 50 * 1024 * 1024) {
 					scaffoldState.snackbarHostState.showSnackbar(
 						"File size exceeds 10MB limit.",
 						actionLabel = "Hide",
@@ -205,16 +204,11 @@ fun FolderUI(
 				) {
 					TopAppBar(
 						navigationIcon = {
-							IconButton(
-								onClick = {
-									navigator.pop()
-								}
-							) {
+							IconButton(onClick = navigator::pop) {
 								Icon(Icons.Default.ChevronLeft, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 							}
 						},
-						title = {
-						}
+						title = {}
 					)
 					Text("Error loading folder data.", style = TitleLineLarge)
 					Spacer(Modifier.height(15.dp))
@@ -244,9 +238,7 @@ fun FolderUI(
 					FileChainView()
 
 					Box(Modifier.clip(RoundedCornerShape(12.dp)).blur(blurRadius, edgeTreatment = BlurredEdgeTreatment.Unbounded)) {
-						Column(
-							modifier = Modifier.fillMaxSize(),
-						) {
+						Column(Modifier.fillMaxSize()) {
 							when (viewIndex) {
 								FileViewIndex.LIST -> FolderListView(listState)
 								FileViewIndex.GRID -> FolderGridView(gridState)

@@ -81,12 +81,18 @@ object FileRepository {
 
 	fun getFilesSharedWithUser(ownerId: String) = transaction {
 		val ownerUuid = UUID.fromString(ownerId)
-		val sharedFileIds = Shares.selectAll()
-			.where { (Shares.sharedWithUserId eq ownerUuid) and (Shares.fileId.isNotNull()) }
-			.mapNotNull { it[Shares.fileId]?.value }
 
-		Files.selectAll().where { Files.id inList (sharedFileIds) }
-			.map { it.toFileOutputDto(getFileBreadcrumb(it[Files.id].value, ownerUuid)) }
+		(Files innerJoin Shares)
+			.selectAll()
+			.where { (Shares.sharedWithUserId eq ownerUuid) and (Shares.fileId.isNotNull()) }
+			.map { row ->
+				val sharedTime = row[Shares.createdAt].toString()
+				row.toFileOutputDto(
+					breadcrumb = emptyList(),
+					sharedAt = sharedTime,
+					sharePermission = row[Shares.permission]
+				)
+			}
 	}
 
 	fun moveFile(id: String, targetParentId: String, ownerId: String): Int = transaction {

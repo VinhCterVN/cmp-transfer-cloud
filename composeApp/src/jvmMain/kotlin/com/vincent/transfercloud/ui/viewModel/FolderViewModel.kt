@@ -236,7 +236,7 @@ class FolderViewModel(
 		)
 	}
 
-	fun uploadFile(file: File?, shareIds: List<String> = emptyList()) = viewModelScope.launch {
+	fun uploadFile(file: File?, shareIds: List<String> = emptyList()) = viewModelScope.launch(Dispatchers.IO) {
 		if (file == null) return@launch
 		println("Uploading file: $file with ${shareIds.size} shares")
 		val req = CreateFileRequest(
@@ -276,7 +276,7 @@ class FolderViewModel(
 		)
 	}
 
-	fun downloadFile(file: FileOutputDto) = viewModelScope.launch {
+	fun downloadFile(file: FileOutputDto) = viewModelScope.launch(Dispatchers.IO) {
 		sendRequest(
 			type = SocketRequestType.DOWNLOAD,
 			payload = DownloadRequest(resource = "file", id = file.id, ownerId = file.ownerId),
@@ -292,17 +292,14 @@ class FolderViewModel(
 		)
 	}
 
-	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch {
+	fun downloadFolder(folder: FolderOutputDto) = viewModelScope.launch(Dispatchers.IO) {
 		sendRequest(
 			type = SocketRequestType.DOWNLOAD,
 			payload = DownloadRequest(resource = "folder", id = folder.id, ownerId = folder.ownerId),
 			onSuccess = { res ->
 				val data = json.decodeFromString<FolderDownloadMetadata>(res.data!!)
 				println(data)
-
-				if (data.message == "READY") {
-					handleDownloadFolder(data)
-				}
+				if (data.message == "READY") handleDownloadFolder(data)
 			},
 			onError = { msg ->
 				println("Error downloading folder: $msg")
@@ -310,7 +307,7 @@ class FolderViewModel(
 		)
 	}
 
-	private fun handleDownloadFolder(data: FolderDownloadMetadata) = viewModelScope.launch {
+	private fun handleDownloadFolder(data: FolderDownloadMetadata) = viewModelScope.launch(Dispatchers.IO) {
 		var socket: Socket? = null
 		try {
 			socket = aSocket(selectorManager).tcp().connect(data.serverHost, data.serverPort)
@@ -346,7 +343,7 @@ class FolderViewModel(
 		ThumbnailHelper.save(_tempFiles.value)
 	}
 
-	fun getThumbnail(fileId: String, ownerId: String) = viewModelScope.launch {
+	fun getThumbnail(fileId: String, ownerId: String) = viewModelScope.launch(Dispatchers.IO) {
 		if (_tempFiles.value.containsKey(fileId)) return@launch
 		sendRequest(
 			type = SocketRequestType.GET,

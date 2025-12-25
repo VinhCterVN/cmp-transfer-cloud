@@ -19,7 +19,7 @@ import com.vincent.transfercloud.utils.cursorHand
 fun FileOptionMenu(
 	expanded: Boolean,
 	offset: DpOffset = DpOffset.Zero,
-	onDismissRequest: () -> Unit,
+	onDismissRequest:  () -> Unit,
 	onRename: () -> Unit,
 	onShare: () -> Unit,
 	onMove: () -> Unit,

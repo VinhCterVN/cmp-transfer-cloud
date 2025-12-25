@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -311,7 +312,11 @@ fun TransferItem(
 						.padding(horizontal = 12.dp)
 						.padding(bottom = 12.dp)
 				) {
-					Divider(modifier = Modifier.padding(vertical = 8.dp))
+					HorizontalDivider(
+						modifier = Modifier.padding(vertical = 8.dp),
+						thickness = DividerDefaults.Thickness,
+						color = DividerDefaults.color
+					)
 
 					Text(
 						text = "Files",

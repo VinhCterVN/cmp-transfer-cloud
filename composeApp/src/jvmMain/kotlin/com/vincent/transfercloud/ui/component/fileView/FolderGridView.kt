@@ -264,13 +264,17 @@ fun ColumnScope.FolderGridView(
 										onShare = { openMenuFolderId = null; viewModel.emitSharingItem(folder.id, true) },
 										onDownload = {
 											scope.launch {
+												openMenuFolderId = null
 												bottomSheetState.snackbarHostState.showSnackbar(
 													"Downloading ${folder.name}...",
 													actionLabel = "OK",
 													duration = SnackbarDuration.Short
 												)
 												viewModel.downloadFolder(folder)
-												openMenuFolderId = null
+												bottomSheetState.snackbarHostState.showSnackbar(
+													"${folder.name} has been downloaded.",
+													duration = SnackbarDuration.Short,
+												)
 											}
 										},
 										onDelete = {

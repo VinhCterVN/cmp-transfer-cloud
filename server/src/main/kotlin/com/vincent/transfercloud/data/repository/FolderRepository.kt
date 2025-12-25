@@ -103,13 +103,17 @@ object FolderRepository {
 
 	fun getFoldersSharedWithUser(ownerId: String) = transaction {
 		val ownerUuid = UUID.fromString(ownerId)
-		val sharedFolderIds = Shares.selectAll()
+		(Folders innerJoin Shares)
+			.selectAll()
 			.where { (Shares.sharedWithUserId eq ownerUuid) and (Shares.folderId.isNotNull()) }
-			.mapNotNull { it[Shares.folderId]?.value }
-
-		Folders.selectAll()
-			.where { Folders.id inList sharedFolderIds }
-			.map { it.toFolderOutputDto(getFolderBreadcrumb(it[Folders.id].value, ownerUuid)) }
+			.map { row ->
+				val sharedTime = row[Shares.createdAt].toString()
+				row.toFolderOutputDto(
+					breadcrumb = getFolderBreadcrumb(row[Folders.id].value, ownerUuid),
+					sharedAt = sharedTime,
+					sharePermission = row[Shares.permission]
+				)
+			}
 	}
 
 	fun moveFolder(id: String, targetParentId: String, ownerId: String) = transaction {
