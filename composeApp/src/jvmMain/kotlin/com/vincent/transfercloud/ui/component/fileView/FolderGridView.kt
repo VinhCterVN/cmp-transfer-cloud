@@ -247,7 +247,7 @@ fun ColumnScope.FolderGridView(
 									Box(
 										modifier = Modifier.clip(CircleShape).cursorHand()
 											.clickable(
-												onClick = { openMenuFolderId = folder.id },
+												onClick = { openMenuFolderId = folder.id; viewModel.setSelectedIds(setOf(folder.id)) },
 											)
 											.padding(4.dp)
 									) {

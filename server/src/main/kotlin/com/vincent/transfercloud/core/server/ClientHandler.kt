@@ -71,6 +71,7 @@ class ClientHandler(
 			SocketRequestType.DOWNLOAD -> handleDownload(req)
 			SocketRequestType.MOVE -> handleMove(req)
 			SocketRequestType.COPY -> handleCopy(req)
+			SocketRequestType.SHARE -> handleShare(req)
 		}
 	}
 
@@ -127,7 +128,46 @@ class ClientHandler(
 
 	private fun handleCopy(req: SocketRequest) {}
 
-	// AUTH HANDLERS
+	private fun handleShare(request: SocketRequest) {
+				val requestId = request.id
+		val payload = request.payload
+try {
+			val req = json.decodeFromString<ShareRequest>(payload)
+			when (req.resource) {
+				"file" -> {
+					FileRepository.shareFile(req.resourceId, req.ownerId, req.shareToEmail, req.permission)
+				}
+				"folder" -> {
+					FolderRepository.shareFolder(req.resourceId, req.ownerId, req.shareToEmail, req.permission)
+				}
+				else -> {
+					send(
+						SocketResponse(
+							id = requestId,
+							status = ResponseStatus.ERROR,
+							message = "Unknown resource: ${req.resource}"
+						)
+					)
+					return
+				}
+			}
+			send(
+				SocketResponse(
+					status = ResponseStatus.SUCCESS,
+					message = "${req.resource} shared successfully"
+				)
+			)
+		} catch (e: Exception) {
+			send(
+				SocketResponse(
+					id = requestId,
+					status = ResponseStatus.ERROR,
+					message = "Share failed: ${e.message}"
+				)
+			)
+}
+	}
+
 	private fun handleLogin(request: SocketRequest) {
 		val requestId = request.id
 		val payload = request.payload

@@ -92,15 +92,16 @@ object FolderRepository {
 		updatedRows > 0
 	}
 
-	fun shareFolder(folderId: UUID, ownerId: UUID, sharedWithUserId: UUID, permission: SharePermission): UUID {
-		return transaction {
-			Shares.insertAndGetId {
-				it[Shares.folderId] = folderId
-				it[Shares.ownerId] = ownerId
-				it[Shares.sharedWithUserId] = sharedWithUserId
-				it[Shares.permission] = permission
-			}.value
-		}
+	fun shareFolder(folderId: String, ownerId: String, sharedWithUserId: String, permission: SharePermission): String = transaction {
+		val folderUuid = UUID.fromString(folderId)
+		val ownerUuid = UUID.fromString(ownerId)
+		val sharedWithUserUuid = UUID.fromString(sharedWithUserId)
+		Shares.insertAndGetId {
+			it[Shares.folderId] = folderUuid
+			it[Shares.ownerId] = ownerUuid
+			it[Shares.sharedWithUserId] = sharedWithUserUuid
+			it[Shares.permission] = permission
+		}.value.toString()
 	}
 
 	fun deleteFolder(id: String, ownerId: String): Boolean = transaction {

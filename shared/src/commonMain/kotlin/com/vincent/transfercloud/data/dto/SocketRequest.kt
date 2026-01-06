@@ -1,5 +1,6 @@
 package com.vincent.transfercloud.data.dto
 
+import com.vincent.transfercloud.data.enum.SharePermission
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -69,7 +70,16 @@ data class MoveRequest(
 )
 
 @Serializable
+data class ShareRequest(
+	val resourceId: String,
+	val ownerId: String,
+	val shareToEmail: String,
+	val permission: SharePermission,
+	val resource: String
+)
+
+@Serializable
 enum class SocketRequestType {
-	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH, DOWNLOAD, MOVE, COPY
+	LOGIN, REGISTER, LOGOUT, GET, CREATE, DELETE, UPDATE, SEARCH, DOWNLOAD, MOVE, COPY, SHARE
 }
 

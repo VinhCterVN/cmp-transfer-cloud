@@ -4,8 +4,10 @@ import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
 import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.data.dto.*
+import com.vincent.transfercloud.data.enum.SharePermission
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -44,7 +46,7 @@ class ShareDialogVM(
 		)
 	}
 
-	fun getSharesInfo(id: String, ownerId: String, isFolder: Boolean = false) = viewModelScope.launch {
+	fun getSharesInfo(id: String, ownerId: String, isFolder: Boolean = false) = viewModelScope.launch(Dispatchers.IO) {
 		if (id.isEmpty()) return@launch
 		println("Fetching shares info for id: $id, ownerId: $ownerId, isFolder: $isFolder")
 		_uiState.emit(UIState.Loading)
@@ -68,7 +70,21 @@ class ShareDialogVM(
 		)
 	}
 
-	fun handleShare() {
-
-	}
+	fun handleShare(sharingItem: Pair<String, Boolean>, ownerId: String, permission: SharePermission, shareToId: String) =
+		viewModelScope.launch(Dispatchers.IO) {
+			sendRequest(
+				type = SocketRequestType.SHARE,
+				payload = ShareRequest(
+					resourceId = sharingItem.first,
+					ownerId = ownerId,
+					shareToEmail = shareToId,
+					permission = permission,
+					resource = if (sharingItem.second) "folder" else "file"
+				),
+				onSuccess = { res -> println(res)},
+				onError = { e ->
+					println("Error sharing item: $e")
+				}
+			)
+		}
 }

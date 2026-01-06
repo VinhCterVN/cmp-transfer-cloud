@@ -63,6 +63,22 @@ object FileRepository {
 		updatedRows > 0
 	}
 
+	fun shareFile(resourceId: String, ownerId: String, sharedWithUserEmail: String, permission: SharePermission): String =
+		transaction {
+			val fileUuid = UUID.fromString(resourceId)
+			val ownerUuid = UUID.fromString(ownerId)
+			val sharedWithUserUuid = Users.selectAll()
+				.where { Users.email eq sharedWithUserEmail }
+				.singleOrNull()?.get(Users.id) ?: return@transaction ""
+
+			Shares.insertAndGetId {
+				it[Shares.fileId] = fileUuid
+				it[Shares.ownerId] = ownerUuid
+				it[Shares.sharedWithUserId] = sharedWithUserUuid
+				it[Shares.permission] = permission
+			}.value.toString()
+		}
+
 	fun getFileById(fileId: String, ownerId: String): FileOutputDto? = transaction {
 		val fileUuid = UUID.fromString(fileId)
 		val ownerUuid = UUID.fromString(ownerId)
@@ -103,7 +119,6 @@ object FileRepository {
 				)
 			}
 	}
-
 
 	fun moveFile(id: String, targetParentId: String, ownerId: String): Int = transaction {
 		val fileUuid = UUID.fromString(id)

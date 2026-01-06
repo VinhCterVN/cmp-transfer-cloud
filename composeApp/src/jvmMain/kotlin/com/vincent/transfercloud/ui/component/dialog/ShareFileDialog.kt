@@ -73,6 +73,7 @@ fun ShareFileDialog(
 		),
 		label = "searchHeight"
 	)
+	var metadata by remember { mutableStateOf<Triple<String, String, String>?>(null) }
 
 	LaunchedEffect(searchQuery) {
 		snapshotFlow { searchQuery }
@@ -88,9 +89,10 @@ fun ShareFileDialog(
 
 	LaunchedEffect(sharingFolder) {
 		if (sharingFolder.first.isEmpty()) return@LaunchedEffect
-		val (id, ownerId, name) = folderViewModel.findItemMetadata(sharingFolder.first, sharingFolder.second)
-		itemName = name
-		viewModel.getSharesInfo(id, ownerId, sharingFolder.second)
+		metadata = folderViewModel.findItemMetadata(sharingFolder.first, sharingFolder.second)
+		if (metadata == null) return@LaunchedEffect
+		itemName = metadata!!.third
+		viewModel.getSharesInfo(metadata!!.first, metadata!!.second, sharingFolder.second)
 	}
 
 	if (sharingFolder.first.isEmpty()) return
@@ -268,8 +270,7 @@ fun ShareFileDialog(
 							.weight(1f, fill = false)
 							.fillMaxWidth(),
 						contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 8.dp)
-					)
-					{
+					) {
 						if (sharedUsers.isNotEmpty()) {
 							item {
 								HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp))
@@ -298,7 +299,15 @@ fun ShareFileDialog(
 							Text("Cancel")
 						}
 						Spacer(modifier = Modifier.width(8.dp))
-						Button(onClick = { /* Handle confirm */ }) {
+						Button(onClick = {
+							viewModel.handleShare(
+								sharingItem = sharingFolder,
+								ownerId = metadata!!.second,
+								permission = selectedPermission,
+								shareToId = searchQuery
+							)
+							appState.sharingFolder.value = "" to false
+						}) {
 							Text("Confirm")
 						}
 					}
