@@ -54,6 +54,15 @@ object FileRepository {
 		}
 	}
 
+	fun renameFile(id: String, data: String, ownerId: String): Boolean = transaction {
+		val fileUuid = UUID.fromString(id)
+		val ownerUuid = UUID.fromString(ownerId)
+		val updatedRows = Files.update({ (Files.id eq fileUuid) and (Files.ownerId eq ownerUuid) }) {
+			it[name] = data
+		}
+		updatedRows > 0
+	}
+
 	fun getFileById(fileId: String, ownerId: String): FileOutputDto? = transaction {
 		val fileUuid = UUID.fromString(fileId)
 		val ownerUuid = UUID.fromString(ownerId)
@@ -95,6 +104,7 @@ object FileRepository {
 			}
 	}
 
+
 	fun moveFile(id: String, targetParentId: String, ownerId: String): Int = transaction {
 		val fileUuid = UUID.fromString(id)
 		val targetParentUuid = UUID.fromString(targetParentId)
@@ -122,4 +132,5 @@ object FileRepository {
 				)
 			}
 	}
+
 }

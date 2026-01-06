@@ -27,16 +27,23 @@ fun FolderNameDialog(
 	label: String = "Folder Name",
 	appState: AppState = koinInject<AppState>(),
 	viewModel: FolderViewModel = koinInject<FolderViewModel>(),
-	action: (() -> Unit)? = null
+	onDismiss: () -> Unit = {},
+	action: (() -> Unit)? = null,
 ) {
 	val scope = rememberCoroutineScope()
 	val currentFolder by appState.currentFolder.collectAsState()
+	val isRenaming by appState.renamingFolder.collectAsState()
+	val isRenamingFolder by appState.isRenamingFolder.collectAsState()
 	var folderName by remember { mutableStateOf("") }
 	val scaffoldState = LocalBottomSheetScaffoldState.current
 	val nameFieldRequester = remember { FocusRequester() }
 
-	if (visible)
-		Dialog(onDismissRequest = { appState.isCreatingFolder.value = false }) {
+	LaunchedEffect(isRenaming) {
+		folderName = isRenaming.second
+	}
+
+	if (visible || isRenaming.second.isNotEmpty())
+		Dialog(onDismissRequest = onDismiss) {
 			LaunchedEffect(Unit) {
 				nameFieldRequester.requestFocus()
 			}
@@ -67,23 +74,22 @@ fun FolderNameDialog(
 						verticalAlignment = Alignment.CenterVertically,
 						horizontalArrangement = Arrangement.spacedBy(4.dp)
 					) {
-						TextButton({
-							appState.isCreatingFolder.value = false
-						}) {
+						TextButton(onDismiss) {
 							Text("Close", style = TitleLineLarge.copy(fontSize = 16.sp))
 						}
 						Button(onClick = {
-							if (action != null) {
-								action()
-							} else
-								scope.launch {
-									val res = viewModel.createFolder(folderName, currentFolder)
-									scaffoldState.snackbarHostState.showSnackbar(
-										res,
-										withDismissAction = true,
-										duration = SnackbarDuration.Short
-									)
-								}
+							if (action != null) action()
+							else scope.launch {
+								val res = if (isRenaming.first.isEmpty()) viewModel.createFolder(folderName, currentFolder)
+								else if (isRenamingFolder) viewModel.renameFolder(folderName, isRenaming.first, isRenaming.second)
+								else viewModel.renameFile(folderName, isRenaming.first, isRenaming.second)
+
+								scaffoldState.snackbarHostState.showSnackbar(
+									res,
+									withDismissAction = true,
+									duration = SnackbarDuration.Short
+								)
+							}
 						}) {
 							Text("Create", style = TitleLineLarge.copy(fontSize = 16.sp))
 						}

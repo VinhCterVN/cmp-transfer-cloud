@@ -102,10 +102,11 @@ fun FolderUI(
 				if (transferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
 					val files = transferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>
 					val pending = files.first() as File
-					if (pending.length() > 50 * 1024 * 1024) {
+					val size = if (pending.isDirectory) getFolderSize(pending) else pending.length()
+					if (size > 50 * 1024 * 1024) {
 						scope.launch {
 							scaffoldState.snackbarHostState.showSnackbar(
-								"File size exceeds 10MB limit.",
+								"File size exceeds 50MB limit.",
 								actionLabel = "Hide",
 								duration = SnackbarDuration.Short
 							)
@@ -225,7 +226,10 @@ fun FolderUI(
 			}
 
 			else -> @Composable {
-				FolderNameDialog(isCreatingFolder)
+				FolderNameDialog(isCreatingFolder, onDismiss = {
+					appState.isCreatingFolder.value = false;
+					appState.renamingFolder.value = "" to ""
+				})
 				FileUploadDialog(
 					uploadFile = uploadingFile,
 					onCancel = { uploadingFile = null },

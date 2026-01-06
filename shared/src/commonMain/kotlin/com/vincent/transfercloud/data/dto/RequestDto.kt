@@ -1,6 +1,7 @@
 package com.vincent.transfercloud.data.dto
 
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 data class LoginRequest(
@@ -32,4 +33,11 @@ data class CreateFileRequest(
 	val mimeType: String,
 	val shareIds: List<String> = emptyList(),
 	val data: ByteArray
+)
+
+@Serializable
+data class UploadFolderRequest(
+	val id: String = UUID.randomUUID().toString(),
+	val ownerId: String,
+
 )

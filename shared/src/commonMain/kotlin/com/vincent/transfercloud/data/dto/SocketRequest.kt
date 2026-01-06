@@ -1,15 +1,18 @@
 package com.vincent.transfercloud.data.dto
 
 import kotlinx.serialization.Serializable
+import java.util.UUID
 
 @Serializable
 data class SocketRequest(
+	val id: String = UUID.randomUUID().toString(),
 	val type: SocketRequestType,
 	val payload: String,
 )
 
 @Serializable
 data class SocketResponse(
+	val id: String = UUID.randomUUID().toString(),
 	val status: ResponseStatus,
 	val message: String,
 	val data: String? = null,
@@ -28,6 +31,13 @@ data class CreateRequest(
 	val data: String
 )
 
+@Serializable
+data class UpdateRequest(
+	val id: String,
+	val resource: String,
+	val ownerId: String,
+	val data: String
+)
 
 @Serializable
 data class DeleteRequest(

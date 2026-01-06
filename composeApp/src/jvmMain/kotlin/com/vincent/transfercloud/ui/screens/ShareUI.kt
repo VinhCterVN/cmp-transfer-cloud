@@ -33,6 +33,7 @@ import com.vincent.transfercloud.ui.component.fileView.FileChainView
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
 import com.vincent.transfercloud.ui.state.getFileIcon
+import com.vincent.transfercloud.ui.viewModel.FolderViewModel
 import com.vincent.transfercloud.ui.viewModel.ShareViewModel
 import com.vincent.transfercloud.ui.viewModel.SharedUiItem
 import com.vincent.transfercloud.utils.cursorHand
@@ -45,10 +46,12 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ShareScreen(
 	appState: AppState = koinInject<AppState>(),
+	folderVM: FolderViewModel = koinViewModel(),
 	viewModel: ShareViewModel = koinViewModel()
 ) {
 	val gridState = rememberLazyGridState()
 	val sharedData by viewModel.shareData.collectAsState()
+	val tempFiles by folderVM.tempFiles.collectAsState()
 	val uiState by viewModel.uiState.collectAsState()
 	LaunchedEffect(Unit) {
 		viewModel.getSharedData()
@@ -257,6 +260,54 @@ fun ShareScreen(
 																	RoundedCornerShape(4.dp)
 																)
 														) {
+															if (tempFiles[item.id]?.exists() == true) {
+																AsyncImage(
+																	model = tempFiles[item.id]?.absolutePath,
+																	contentDescription = null,
+																	contentScale = ContentScale.Crop,
+																	modifier = Modifier.fillMaxSize(),
+																)
+
+																Box(
+																	modifier = Modifier
+																		.align(Alignment.BottomEnd)
+																		.padding(4.dp)
+																		.background(
+																			Color.Black.copy(alpha = 0.6f),
+																			RoundedCornerShape(4.dp)
+																		)
+																		.padding(4.dp)
+																) {
+																	Icon(
+																		painter = painterResource(getFileIcon(item.name)),
+																		contentDescription = null,
+																		modifier = Modifier.size(20.dp),
+																		tint = Color.White
+																	)
+																}
+															} else {
+																Box(
+																	Modifier
+																		.fillMaxSize()
+																		.background(
+																			brush = Brush.verticalGradient(
+																				colors = listOf(
+																					Color(0xFF1E3A8A).copy(0.25f),
+																					Color(0xFF3B82F6).copy(0.25f)
+																				)
+																			)
+																		),
+																	contentAlignment = Alignment.Center
+																) {
+																	Icon(
+																		painter = painterResource(getFileIcon(item.name)),
+																		contentDescription = null,
+																		modifier = Modifier.size(48.dp),
+																		tint = Color.White.copy(alpha = 0.5f)
+																	)
+																}
+															}
+
 															Box(
 																modifier = Modifier
 																	.align(Alignment.BottomEnd)

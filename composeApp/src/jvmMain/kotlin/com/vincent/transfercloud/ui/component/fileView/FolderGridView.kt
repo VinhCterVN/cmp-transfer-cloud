@@ -49,6 +49,7 @@ import coil3.compose.AsyncImage
 import com.vincent.transfercloud.ui.component.button.ExpandButton
 import com.vincent.transfercloud.ui.component.dialog.FileOptionMenu
 import com.vincent.transfercloud.ui.navigation.FolderDetailView
+import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.state.getFileIcon
 import com.vincent.transfercloud.ui.theme.TitleLineBig
@@ -68,6 +69,7 @@ import java.awt.datatransfer.StringSelection
 @Composable
 fun ColumnScope.FolderGridView(
 	listState: LazyGridState,
+	appState: AppState = koinInject<AppState>(),
 	viewModel: FolderViewModel = koinInject<FolderViewModel>()
 ) {
 	val scope = rememberCoroutineScope()
@@ -259,7 +261,9 @@ fun ColumnScope.FolderGridView(
 									FileOptionMenu(
 										expanded = openMenuFolderId == folder.id,
 										onDismissRequest = { openMenuFolderId = null },
-										onRename = { openMenuFolderId = null },
+										onRename = { openMenuFolderId = null;
+											appState.isRenamingFolder.value = true
+											appState.renamingFolder.value = folder.id to folder.name },
 										onMove = { openMenuFolderId = null },
 										onShare = { openMenuFolderId = null; viewModel.emitSharingItem(folder.id, true) },
 										onDownload = {
@@ -401,7 +405,9 @@ fun ColumnScope.FolderGridView(
 										FileOptionMenu(
 											expanded = openMenuFolderId == file.id,
 											onDismissRequest = { openMenuFolderId = null },
-											onRename = { openMenuFolderId = null },
+											onRename = { openMenuFolderId = null;
+												appState.isRenamingFolder.value = false;
+												appState.renamingFolder.value = file.id to file.name },
 											onMove = { openMenuFolderId = null },
 											onShare = { openMenuFolderId = null; viewModel.emitSharingItem(file.id, false) },
 											onDownload = {

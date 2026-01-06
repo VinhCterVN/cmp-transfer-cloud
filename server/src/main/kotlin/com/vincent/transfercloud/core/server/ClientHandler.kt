@@ -60,23 +60,25 @@ class ClientHandler(
 
 	private fun handleRequest(req: SocketRequest) {
 		when (req.type) {
-			SocketRequestType.LOGIN -> handleLogin(req.payload)
-			SocketRequestType.REGISTER -> handleRegister(req.payload)
+			SocketRequestType.LOGIN -> handleLogin(req)
+			SocketRequestType.REGISTER -> handleRegister(req)
 			SocketRequestType.LOGOUT -> handleLogout()
-			SocketRequestType.GET -> handleGet(req.payload)
-			SocketRequestType.CREATE -> handleCreate(req.payload)
-			SocketRequestType.DELETE -> handleDelete(req.payload)
-			SocketRequestType.UPDATE -> handleUpdate(req.payload)
-			SocketRequestType.SEARCH -> handleSearch(req.payload)
-			SocketRequestType.DOWNLOAD -> handleDownload(req.payload)
-			SocketRequestType.MOVE -> handleMove(req.payload)
-			SocketRequestType.COPY -> handleCopy(req.payload)
+			SocketRequestType.GET -> handleGet(req)
+			SocketRequestType.CREATE -> handleCreate(req)
+			SocketRequestType.DELETE -> handleDelete(req)
+			SocketRequestType.UPDATE -> handleUpdate(req)
+			SocketRequestType.SEARCH -> handleSearch(req)
+			SocketRequestType.DOWNLOAD -> handleDownload(req)
+			SocketRequestType.MOVE -> handleMove(req)
+			SocketRequestType.COPY -> handleCopy(req)
 		}
 	}
 
-	private fun handleMove(payload: String) {
+	private fun handleMove(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 		try {
@@ -85,6 +87,7 @@ class ClientHandler(
 			if (ownerId != userId) {
 				send(
 					SocketResponse(
+						id = requestId,
 						status = ResponseStatus.ERROR,
 						message = "Unauthorized access"
 					)
@@ -97,6 +100,7 @@ class ClientHandler(
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -113,6 +117,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Move failed: ${e.message}"
 				)
@@ -120,10 +125,12 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleCopy(payload: String) {}
+	private fun handleCopy(req: SocketRequest) {}
 
 	// AUTH HANDLERS
-	private fun handleLogin(payload: String) {
+	private fun handleLogin(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		try {
 			val dto = json.decodeFromString<LoginRequest>(payload)
 			val userOutput = AuthRepository.login(dto.email, dto.password)
@@ -132,6 +139,7 @@ class ClientHandler(
 				server.register(userOutput.id, this)
 				send(
 					SocketResponse(
+						id = requestId,
 						status = ResponseStatus.SUCCESS,
 						message = "Login successful",
 						data = json.encodeToString(userOutput)
@@ -140,6 +148,7 @@ class ClientHandler(
 			} else {
 				send(
 					SocketResponse(
+						id = requestId,
 						status = ResponseStatus.ERROR,
 						message = "Invalid email or password"
 					)
@@ -148,6 +157,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Login failed: ${e.message}"
 				)
@@ -155,7 +165,9 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleRegister(payload: String) {
+	private fun handleRegister(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		try {
 			val dto = json.decodeFromString<UserInputDto>(payload)
 			val userOutput = AuthRepository.register(dto)
@@ -164,6 +176,7 @@ class ClientHandler(
 				server.register(userOutput.id, this)
 				send(
 					SocketResponse(
+						id = requestId,
 						status = ResponseStatus.SUCCESS,
 						message = "Registration successful",
 						data = json.encodeToString(userOutput)
@@ -172,6 +185,7 @@ class ClientHandler(
 			} else {
 				send(
 					SocketResponse(
+						id = requestId,
 						status = ResponseStatus.ERROR,
 						message = "Registration failed"
 					)
@@ -180,6 +194,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Registration failed: ${e.message}"
 				)
@@ -197,9 +212,11 @@ class ClientHandler(
 		disconnect()
 	}
 
-	private fun handleGet(payload: String) {
+	private fun handleGet(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 		try {
@@ -209,6 +226,7 @@ class ClientHandler(
 					val users = UserRepository.getAll()
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "Users retrieved",
 							data = json.encodeToString(users)
@@ -217,11 +235,12 @@ class ClientHandler(
 				}
 
 				"user" -> {
-					val id = req.id ?: userId
-					val user = UserRepository.getById(UUID.fromString(id))
+					val reqId = req.id ?: userId
+					val user = UserRepository.getById(UUID.fromString(reqId))
 					if (user != null) {
 						send(
 							SocketResponse(
+								id = requestId,
 								status = ResponseStatus.SUCCESS,
 								message = "User found",
 								data = json.encodeToString(user)
@@ -230,6 +249,7 @@ class ClientHandler(
 					} else {
 						send(
 							SocketResponse(
+								id = requestId,
 								status = ResponseStatus.ERROR,
 								message = "User not found"
 							)
@@ -239,7 +259,7 @@ class ClientHandler(
 
 				"folder" -> {
 					if (req.id == null) {
-						send(SocketResponse(ResponseStatus.ERROR, "Folder ID required"))
+						send(SocketResponse(requestId, ResponseStatus.ERROR, "Folder ID required"))
 						return
 					}
 					val ownerId = req.ownerId ?: userId!!
@@ -250,7 +270,7 @@ class ClientHandler(
 						message = if (folder != null) "Folder found" else "Folder not found",
 						data = folder
 					)
-					send(SocketResponse(response.status, response.message, json.encodeToString(response)))
+					send(SocketResponse(requestId, response.status, response.message, json.encodeToString(response)))
 				}
 
 				"shared-with-me" -> {
@@ -265,6 +285,7 @@ class ClientHandler(
 					)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "Shared folders retrieved",
 							data = json.encodeToString(response)
@@ -274,7 +295,7 @@ class ClientHandler(
 
 				"file-shared-info" -> {
 					if (req.id == null) {
-						send(SocketResponse(ResponseStatus.ERROR, "File ID required"))
+						send(SocketResponse(requestId, ResponseStatus.ERROR, "File ID required"))
 						return
 					}
 					val shares = FileRepository.getFileSharedInfo(req.id!!, req.ownerId!!)
@@ -285,6 +306,7 @@ class ClientHandler(
 					)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "File shared info retrieved",
 							data = json.encodeToString(response)
@@ -294,7 +316,7 @@ class ClientHandler(
 
 				"folder-shared-info" -> {
 					if (req.id == null) {
-						send(SocketResponse(ResponseStatus.ERROR, "Folder ID required"))
+						send(SocketResponse(requestId, ResponseStatus.ERROR, "Folder ID required"))
 						return
 					}
 					val shares = FolderRepository.getFolderSharedInfo(req.id!!, req.ownerId!!)
@@ -305,6 +327,7 @@ class ClientHandler(
 					)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "Folder shared info retrieved",
 							data = json.encodeToString(response)
@@ -314,7 +337,7 @@ class ClientHandler(
 
 				"file-thumbnail" -> {
 					if (req.id == null) {
-						send(SocketResponse(ResponseStatus.ERROR, "File ID required"))
+						send(SocketResponse(requestId, ResponseStatus.ERROR, "File ID required"))
 						return
 					}
 					val fileRecord = FileRepository.getFileById(req.id!!, req.ownerId!!)
@@ -325,12 +348,13 @@ class ClientHandler(
 						message = if (bytes != null) "Thumbnail retrieved" else "Thumbnail not found",
 						thumbnailBytes = bytes
 					)
-					send(SocketResponse(response.status, response.message, json.encodeToString(response)))
+					send(SocketResponse(requestId, response.status, response.message, json.encodeToString(response)))
 				}
 
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -340,6 +364,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Get failed: ${e.message}"
 				)
@@ -347,9 +372,11 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleSearch(payload: String) {
+	private fun handleSearch(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 		try {
@@ -359,6 +386,7 @@ class ClientHandler(
 					val filteredUsers = UserRepository.findByEmailContaining(req.query)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "Search completed",
 							data = json.encodeToString(filteredUsers)
@@ -369,6 +397,7 @@ class ClientHandler(
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -378,6 +407,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Search failed: ${e.message}"
 				)
@@ -385,9 +415,11 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleCreate(payload: String) {
+	private fun handleCreate(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 		try {
@@ -399,6 +431,7 @@ class ClientHandler(
 					UserRepository.createUser(userDto)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "User created"
 						)
@@ -419,6 +452,7 @@ class ClientHandler(
 					)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = response.status,
 							message = response.message,
 							data = json.encodeToString(response)
@@ -450,18 +484,13 @@ class ClientHandler(
 						message = if (file != null) "File created" else "Failed to create file"
 					)
 
-					send(
-						SocketResponse(
-							status = response.status,
-							message = response.message,
-							data = json.encodeToString(response)
-						)
-					)
+					send(SocketResponse(requestId, response.status, response.message, json.encodeToString(response)))
 				}
 
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -471,6 +500,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Create failed: ${e.message}"
 				)
@@ -478,9 +508,11 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleDelete(payload: String) {
+	private fun handleDelete(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 
@@ -499,6 +531,7 @@ class ClientHandler(
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -507,41 +540,102 @@ class ClientHandler(
 				}
 			}
 
-			if (success) send(SocketResponse(ResponseStatus.SUCCESS, "${req.resource.capitalize()} deleted successfully"))
-			else send(SocketResponse(ResponseStatus.ERROR, "Failed to delete ${req.resource}"))
+			if (success) send(SocketResponse(requestId, ResponseStatus.SUCCESS, "${req.resource.capitalize()} deleted successfully"))
+			else send(SocketResponse(requestId, ResponseStatus.ERROR, "Failed to delete ${req.resource}"))
 
 		} catch (e: Exception) {
-			send(SocketResponse(ResponseStatus.ERROR, "Delete failed: ${e.message}"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Delete failed: ${e.message}"))
 		}
 	}
 
-	private fun handleUpdate(payload: String) {
-		send(
-			SocketResponse(
-				status = ResponseStatus.SUCCESS,
-				message = "Update not implemented yet"
+	private fun handleUpdate(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
+		try {
+			val req = json.decodeFromString<UpdateRequest>(payload)
+			when (req.resource) {
+				"file" -> {
+					val record = FileRepository.getFileById(req.id, req.ownerId)
+					assert(record != null) {
+						"File with ID ${req.id} not found for owner ${req.ownerId}."
+					}
+					if (FileRepository.renameFile(req.id, req.data, req.ownerId)) {
+						send(
+							SocketResponse(
+								id = requestId,
+								status = ResponseStatus.SUCCESS,
+								message = "File renamed successfully",
+								data = json.encodeToString(
+									RenameFolderResponseDto(
+										folder = null,
+										status = ResponseStatus.SUCCESS,
+										message = "File renamed successfully"
+									)
+								)
+							)
+						)
+					} else {
+						send(
+							SocketResponse(
+								id = requestId,
+								status = ResponseStatus.ERROR,
+								message = "Failed to rename file"
+							)
+						)
+					}
+				}
+				"folder" -> {
+					val record = FolderRepository.getFolderById(req.id, req.ownerId)
+					assert(record != null) {
+						"Folder with ID ${req.id} not found for owner ${req.ownerId}."
+					}
+					if (FolderRepository.renameFolder(req.id, req.data, req.ownerId)) {
+						send(
+							SocketResponse(
+								id = requestId,
+								status = ResponseStatus.SUCCESS,
+								message = "Folder renamed successfully",
+								data = json.encodeToString(
+									RenameFolderResponseDto(
+										record!!.folder,
+										ResponseStatus.SUCCESS,
+										"Folder renamed successfully"
+									)
+								)
+							)
+						)
+					} else {
+						send(
+							SocketResponse(
+								id = requestId,
+								status = ResponseStatus.ERROR,
+								message = "Failed to rename folder"
+							)
+						)
+					}
+				}
+			}
+		} catch (e: Exception) {
+			send(
+				SocketResponse(
+					id = requestId,
+					status = ResponseStatus.ERROR,
+					message = "Update failed: ${e.message}"
+				)
 			)
-		)
+		}
 	}
 
-	private fun handleDownload(payload: String) {
+	private fun handleDownload(request: SocketRequest) {
+		val requestId = request.id
+		val payload = request.payload
 		if (userId == null) {
-			send(SocketResponse(ResponseStatus.ERROR, "Not authenticated"))
+			send(SocketResponse(requestId, ResponseStatus.ERROR, "Not authenticated"))
 			return
 		}
 		try {
 			val req = json.decodeFromString<DownloadRequest>(payload)
 			println("Download request: $req")
-			val ownerId = req.ownerId
-			if (ownerId != userId) {
-				send(
-					SocketResponse(
-						status = ResponseStatus.ERROR,
-						message = "Unauthorized access"
-					)
-				)
-				return
-			}
 
 			when (req.resource) {
 				"file" -> {
@@ -551,6 +645,7 @@ class ClientHandler(
 					if (bytes.isEmpty()) {
 						send(
 							SocketResponse(
+								id = requestId,
 								status = ResponseStatus.ERROR,
 								message = "File not found or empty"
 							)
@@ -560,6 +655,7 @@ class ClientHandler(
 					val resource = DownloadFileResource(fileRecord.name, fileRecord.ownerId, fileRecord.mimeType, bytes)
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.SUCCESS,
 							message = "File download ready",
 							data = json.encodeToString(resource)
@@ -578,13 +674,14 @@ class ClientHandler(
 						address!!.toJavaAddress().hostname,
 						address.toJavaAddress().port
 					)
-					send(SocketResponse(ResponseStatus.SUCCESS, "Folder download ready", json.encodeToString(payload)))
+					send(SocketResponse(requestId, ResponseStatus.SUCCESS, "Folder download ready", json.encodeToString(payload)))
 					ClientDownloadHandler.handleClientDownload(folderRecord.folder.id)
 				}
 
 				else -> {
 					send(
 						SocketResponse(
+							id = requestId,
 							status = ResponseStatus.ERROR,
 							message = "Unknown resource: ${req.resource}"
 						)
@@ -594,6 +691,7 @@ class ClientHandler(
 		} catch (e: Exception) {
 			send(
 				SocketResponse(
+					id = requestId,
 					status = ResponseStatus.ERROR,
 					message = "Download failed: ${e.message}"
 				)

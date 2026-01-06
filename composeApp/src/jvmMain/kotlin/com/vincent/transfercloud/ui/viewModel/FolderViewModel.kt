@@ -2,6 +2,7 @@ package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
+import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.FileViewIndex
@@ -14,6 +15,7 @@ import io.github.vinceglb.filekit.write
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -24,7 +26,8 @@ import java.io.File
 
 class FolderViewModel(
 	appState: AppState,
-) : BaseSocketViewModel(appState) {
+	socketRepository: SocketRepository
+) : BaseSocketViewModel(appState, socketRepository) {
 	val thumbnailDir = "C:\\TransferCloud\\Thumbnails"
 	val currentUser = appState.currentUser.value!!
 	val folderData = MutableStateFlow<FolderWithContentsDto?>(null)
@@ -154,7 +157,7 @@ class FolderViewModel(
 		if (folderName.trim().isEmpty()) {
 			return "Folder name cannot be empty"
 		}
-		var fnRes = "Failed to create folder"
+		var fnRes = "Folder Created"
 		sendRequest(
 			type = SocketRequestType.CREATE,
 			payload = CreateRequest(
@@ -175,6 +178,66 @@ class FolderViewModel(
 			},
 			onError = { str ->
 				println("Error creating folder: $str")
+			}
+		).join()
+		return fnRes
+	}
+
+	suspend fun renameFile(fileName: String, currentFile: String, origin: String): String {
+		appState.renamingFolder.emit("" to "")
+		if (fileName == origin) return "File name is the same as before"
+		if (fileName.trim().isEmpty()) return "File name cannot be empty"
+		println("Renaming file $currentFile to $fileName")
+		var fnRes = "File Renamed"
+		sendRequest(
+			type = SocketRequestType.UPDATE,
+			payload = UpdateRequest(
+				id = currentFile,
+				resource = "file",
+				ownerId = currentUser.id,
+				data = fileName
+			),
+			onSuccess = { res ->
+				val updatedFile: RenameFolderResponseDto = json.decodeFromString<RenameFolderResponseDto>(res.data!!)
+				folderData.value = folderData.value?.copy(
+					files = folderData.value?.files!!.map {
+						if (it.id == currentFile) it.copy(name = fileName.trim()) else it
+					}
+				)
+				fnRes = updatedFile.message
+			},
+			onError = { e ->
+				println("Error renaming file: $e")
+			}
+		).join()
+		return fnRes
+	}
+
+	suspend fun renameFolder(folderName: String, currentFolder: String, origin: String): String {
+		appState.renamingFolder.emit("" to "")
+		if (folderName == origin) return "Folder name is the same as before"
+		if (folderName.trim().isEmpty()) return "Folder name cannot be empty"
+		println("Renaming folder $currentFolder to $folderName")
+		var fnRes = "Folder Renamed"
+		sendRequest(
+			type = SocketRequestType.UPDATE,
+			payload = UpdateRequest(
+				id = currentFolder,
+				resource = "folder",
+				ownerId = currentUser.id,
+				data = folderName
+			),
+			onSuccess = { res ->
+				val updatedFolder: RenameFolderResponseDto = json.decodeFromString<RenameFolderResponseDto>(res.data!!)
+				folderData.value = folderData.value?.copy(
+					subfolders = folderData.value?.subfolders!!.map {
+						if (it.id == currentFolder) it.copy(name = folderName.trim()) else it
+					}
+				)
+				fnRes = updatedFolder.message
+			},
+			onError = { e ->
+				println("Error renaming folder: $e")
 			}
 		).join()
 		return fnRes
@@ -236,13 +299,18 @@ class FolderViewModel(
 		)
 	}
 
-	fun uploadFile(file: File?, shareIds: List<String> = emptyList()) = viewModelScope.launch(Dispatchers.IO) {
+	fun uploadFile(
+		file: File?,
+		isChild: Boolean = true,
+		parentId: String = appState.currentFolder.value,
+		shareIds: List<String> = emptyList(),
+	) = viewModelScope.launch(Dispatchers.IO) {
 		if (file == null) return@launch
 		println("Uploading file: $file with ${shareIds.size} shares")
 		val req = CreateFileRequest(
 			ownerId = currentUser.id,
 			fileName = file.name,
-			parentFolderId = appState.currentFolder.value,
+			parentFolderId = parentId,
 			fileSize = file.length(),
 			mimeType = file.getMimeType(),
 			shareIds = shareIds,
@@ -261,6 +329,7 @@ class FolderViewModel(
 					println("File upload failed: ${newFile.message}")
 					return@sendRequest
 				}
+				if (!isChild) return@sendRequest
 				folderData.value = folderData.value?.copy(
 					files = folderData.value?.files!!.plus(newFile.file!!)
 				)
@@ -274,6 +343,54 @@ class FolderViewModel(
 				println("Error uploading file: $msg")
 			}
 		)
+	}
+
+	fun uploadFolder(file: File?, shareIds: List<String> = emptyList()) = viewModelScope.launch(Dispatchers.IO) {
+		if (file == null) return@launch
+		println("Uploading folder: $file with ${shareIds.size} shares")
+		val queue = ArrayDeque<Pair<File, String?>>()
+		queue.addLast(file to appState.currentFolder.value)
+
+		while (queue.isNotEmpty()) {
+			val (currentFile, serverParentId) = queue.removeFirst()
+
+			if (currentFile.isDirectory) {
+				val createFolderReq = CreateFolderRequest(
+					ownerId = currentUser.id,
+					folderName = currentFile.name,
+					parentFolderId = serverParentId!!
+				)
+				var newServerFolderId: String? = null
+				sendRequest(
+					type = SocketRequestType.CREATE,
+					payload = CreateRequest(
+						"folder",
+						json.encodeToString(createFolderReq)
+					),
+					onSuccess = { res ->
+						val newFolder = json.decodeFromString<CreateFolderResponseDto>(res.data!!)
+						newServerFolderId = newFolder.folder?.id
+						if (newFolder.folder?.parentId == appState.currentFolder.value) {
+							folderData.value = folderData.value?.copy(
+								subfolders = folderData.value?.subfolders!!.plus(newFolder.folder!!)
+							)
+						}
+						println("Folder created on server: ${newFolder.message}")
+					},
+					onError = { msg ->
+						println("Error creating folder on server: $msg")
+					}
+				).join()
+
+				currentFile.listFiles()?.forEach { child ->
+					while (newServerFolderId == null) delay(100)
+					queue.addLast(child to newServerFolderId)
+				}
+			} else {
+				val isChild = serverParentId == appState.currentFolder.value
+				uploadFile(currentFile, isChild, serverParentId!!, shareIds).join()
+			}
+		}
 	}
 
 	fun downloadFile(file: FileOutputDto) = viewModelScope.launch(Dispatchers.IO) {

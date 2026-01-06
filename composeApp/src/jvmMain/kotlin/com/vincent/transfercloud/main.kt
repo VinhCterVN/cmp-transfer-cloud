@@ -18,7 +18,7 @@ fun main() = application {
 	val state = rememberWindowState(
 		width = 1200.dp,
 		height = 800.dp,
-	isMinimized = true
+		isMinimized = true
 	)
 	val scaffoldState = rememberBottomSheetScaffoldState(
 		bottomSheetState = rememberStandardBottomSheetState(
@@ -28,8 +28,7 @@ fun main() = application {
 		snackbarHostState = remember { SnackbarHostState() }
 	)
 
-	KoinApplication(application = { modules(appModule.plus(module { single { state } })) }
-	) {
+	KoinApplication(application = { modules(appModule.plus(module { single { state } })) }) {
 		Window(
 			onCloseRequest = ::exitApplication,
 			title = "Transfer Cloud",

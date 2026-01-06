@@ -2,6 +2,7 @@ package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
+import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
@@ -16,7 +17,8 @@ import java.time.temporal.ChronoUnit
 
 class ShareViewModel(
 	appState: AppState,
-) : BaseSocketViewModel(appState) {
+	socketRepository: SocketRepository
+) : BaseSocketViewModel(appState, socketRepository) {
 	private val _shareData = MutableStateFlow<Map<TimeGroup, List<SharedUiItem>>>(emptyMap())
 	val shareData = _shareData.asStateFlow()
 	private val _uiState = MutableStateFlow<UIState>(UIState.Ready)
@@ -74,6 +76,10 @@ class ShareViewModel(
 		} catch (e: Exception) {
 			TimeGroup.OLDER
 		}
+	}
+
+	fun reload() {
+		TODO("Not yet implemented")
 	}
 }
 

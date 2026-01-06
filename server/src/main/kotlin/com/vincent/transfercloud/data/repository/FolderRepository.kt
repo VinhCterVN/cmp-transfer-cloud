@@ -83,6 +83,15 @@ object FolderRepository {
 		}
 	}
 
+	fun renameFolder(id: String, newName: String, ownerId: String): Boolean = transaction {
+		val folderUuid = UUID.fromString(id)
+		val ownerUuid = UUID.fromString(ownerId)
+		val updatedRows = Folders.update({ (Folders.id eq folderUuid) and (Folders.ownerId eq ownerUuid) }) {
+			it[name] = newName
+		}
+		updatedRows > 0
+	}
+
 	fun shareFolder(folderId: UUID, ownerId: UUID, sharedWithUserId: UUID, permission: SharePermission): UUID {
 		return transaction {
 			Shares.insertAndGetId {

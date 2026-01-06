@@ -2,6 +2,7 @@ package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
+import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.data.dto.*
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
@@ -9,7 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class ShareDialogVM(appState: AppState) : BaseSocketViewModel(appState) {
+class ShareDialogVM(
+	appState: AppState, socketRepository: SocketRepository
+) : BaseSocketViewModel(appState, socketRepository) {
 	val currentUser = appState.currentUser.value!!
 	val filteredUsers = MutableStateFlow<List<UserOutputDto>>(emptyList())
 	private val _uiState = MutableStateFlow<UIState>(UIState.Loading)

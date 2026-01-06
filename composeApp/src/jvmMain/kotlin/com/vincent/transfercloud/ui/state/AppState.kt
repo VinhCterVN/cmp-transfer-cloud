@@ -16,6 +16,10 @@ class AppState {
 	val networkConfig = MutableStateFlow(NetworkConfig())
 	val transferConfig = MutableStateFlow(TransferConfig())
 	val isCreatingFolder = MutableStateFlow(false)
+
+	val renamingFolder = MutableStateFlow("" to "")
+	val isRenamingFolder = MutableStateFlow(true)
+
 	val sharingFolder = MutableStateFlow("" to false)
 	val breadcrumb = MutableStateFlow<List<BreadcrumbItem>>(emptyList())
 	val currentFolder = MutableStateFlow("")

@@ -87,6 +87,7 @@ fun FileUploadDialog(
 	)
 
 	if (uploadFile != null) {
+		val formattedSize = if (isFile) formatFileSize(uploadFile.length()) else formatFileSize(getFolderSize(uploadFile))
 		Dialog(onDismissRequest = onCancel) {
 			Card(
 //				modifier = Modifier.wrapContentSize(),
@@ -130,7 +131,7 @@ fun FileUploadDialog(
 								overflow = TextOverflow.Ellipsis,
 								modifier = Modifier.weight(1f)
 							)
-							Text(formatFileSize(uploadFile.length()), style = MessageStyle, maxLines = 1)
+							Text(formattedSize, style = MessageStyle, maxLines = 1)
 						}
 					}
 					Spacer(Modifier.height(6.dp))
@@ -300,7 +301,8 @@ fun FileUploadDialog(
 					}
 					Button(
 						onClick = {
-							viewModel.uploadFile(uploadFile, sharedUsers)
+							if (isFile) viewModel.uploadFile(uploadFile, shareIds = sharedUsers)
+							else viewModel.uploadFolder(uploadFile, sharedUsers)
 							action()
 						},
 						shape = RoundedCornerShape(8.dp)
@@ -320,4 +322,19 @@ fun formatFileSize(length: Long): String {
 		length > 1024 -> String.format("%.2f KB", length.toFloat() / 1024)
 		else -> "$length B"
 	}
+}
+
+fun getFolderSize(dir: File): Long {
+	var size = 0L
+
+	if (dir.isDirectory) {
+		dir.listFiles()?.forEach { file ->
+			size += if (file.isFile) {
+				file.length()
+			} else {
+				getFolderSize(file)
+			}
+		}
+	}
+	return size
 }

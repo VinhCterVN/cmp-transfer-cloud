@@ -41,14 +41,17 @@ import com.vincent.transfercloud.ui.state.LocalBottomSheetScaffoldState
 import com.vincent.transfercloud.ui.theme.TitleLineLarge
 import com.vincent.transfercloud.ui.viewModel.FolderObject
 import com.vincent.transfercloud.ui.viewModel.FolderViewModel
+import com.vincent.transfercloud.ui.viewModel.ShareViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun FileChainView(
 	appState: AppState = koinInject<AppState>(),
-	viewModel: FolderViewModel = koinInject<FolderViewModel>()
+	viewModel: FolderViewModel = koinInject<FolderViewModel>(),
+	shareVM: ShareViewModel = koinViewModel()
 ) {
 	val scope = rememberCoroutineScope()
 	val bottomSheetState = LocalBottomSheetScaffoldState.current
@@ -164,7 +167,7 @@ fun FileChainView(
 				AppState.AppTab.SHARED -> {
 					item {
 						TextButton(
-							onClick = { },
+							onClick = { shareVM.getSharedData() },
 							contentPadding = ButtonDefaults.SmallContentPadding,
 							interactionSource = null,
 							modifier = Modifier.padding(0.dp)

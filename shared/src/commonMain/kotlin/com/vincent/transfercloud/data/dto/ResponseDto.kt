@@ -32,6 +32,13 @@ data class CreateFolderResponseDto(
 )
 
 @Serializable
+data class RenameFolderResponseDto(
+	val folder: FolderOutputDto?,
+	val status: ResponseStatus,
+	val message: String
+)
+
+@Serializable
 data class CreateFileResponseDto(
 	val file: FileOutputDto?,
 	val status: ResponseStatus,

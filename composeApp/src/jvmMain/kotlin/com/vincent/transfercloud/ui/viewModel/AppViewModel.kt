@@ -3,6 +3,7 @@ package com.vincent.transfercloud.ui.viewModel
 import androidx.lifecycle.viewModelScope
 import com.vincent.transfercloud.core.constant.json
 import com.vincent.transfercloud.core.model.NetworkConfig
+import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.data.dto.LoginRequest
 import com.vincent.transfercloud.data.dto.SocketRequestType
 import com.vincent.transfercloud.data.dto.UserInputDto
@@ -15,8 +16,9 @@ import kotlinx.io.IOException
 import java.net.ConnectException
 
 class AppViewModel(
-	appState: AppState
-) : BaseSocketViewModel(appState) {
+	appState: AppState,
+	socketRepository: SocketRepository
+) : BaseSocketViewModel(appState, socketRepository) {
 	private var password: String? = null
 	private val socket = appState.clientSocket
 	private var reconnectJob: Job? = null

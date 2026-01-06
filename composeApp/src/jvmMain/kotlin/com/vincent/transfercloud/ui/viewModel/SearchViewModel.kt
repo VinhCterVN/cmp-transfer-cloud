@@ -1,6 +1,7 @@
 package com.vincent.transfercloud.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
+import com.vincent.transfercloud.core.server.SocketRepository
 import com.vincent.transfercloud.ui.state.AppState
 import com.vincent.transfercloud.ui.state.UIState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -8,8 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class SearchViewModel(
-	appState: AppState
-) : BaseSocketViewModel(appState) {
+	appState: AppState,
+	socketRepository: SocketRepository
+) : BaseSocketViewModel(appState, socketRepository) {
 	private val _query: MutableStateFlow<String> = MutableStateFlow("")
 	val query = _query.asStateFlow()
 	private val _uiState: MutableStateFlow<UIState> = MutableStateFlow(UIState.Ready)
