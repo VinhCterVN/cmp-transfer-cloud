@@ -30,6 +30,10 @@ dependencies {
 	implementation(libs.postgresql)
 	implementation(libs.mindrot.jbcrypt)
 
+	implementation(libs.ktor.client.core)
+	implementation(libs.ktor.client.cio)
+	implementation(libs.ktor.client.contentNegotiation)
+
 	implementation("io.github.serpro69:kotlin-faker:2.0.0-rc.11")
 	testImplementation(libs.ktor.serverTestHost)
 	testImplementation(libs.kotlin.testJunit)

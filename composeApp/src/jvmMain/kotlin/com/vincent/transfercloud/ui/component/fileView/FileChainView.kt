@@ -167,7 +167,7 @@ fun FileChainView(
 				AppState.AppTab.SHARED -> {
 					item {
 						TextButton(
-							onClick = { shareVM.getSharedData() },
+							onClick = { shareVM.reload() },
 							contentPadding = ButtonDefaults.SmallContentPadding,
 							interactionSource = null,
 							modifier = Modifier.padding(0.dp)

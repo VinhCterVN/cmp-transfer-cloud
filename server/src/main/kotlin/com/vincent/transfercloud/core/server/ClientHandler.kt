@@ -58,7 +58,7 @@ class ClientHandler(
 		}
 	}
 
-	private fun handleRequest(req: SocketRequest) {
+	private suspend fun handleRequest(req: SocketRequest) {
 		when (req.type) {
 			SocketRequestType.LOGIN -> handleLogin(req)
 			SocketRequestType.REGISTER -> handleRegister(req)
@@ -129,17 +129,19 @@ class ClientHandler(
 	private fun handleCopy(req: SocketRequest) {}
 
 	private fun handleShare(request: SocketRequest) {
-				val requestId = request.id
+		val requestId = request.id
 		val payload = request.payload
-try {
+		try {
 			val req = json.decodeFromString<ShareRequest>(payload)
 			when (req.resource) {
 				"file" -> {
 					FileRepository.shareFile(req.resourceId, req.ownerId, req.shareToEmail, req.permission)
 				}
+
 				"folder" -> {
 					FolderRepository.shareFolder(req.resourceId, req.ownerId, req.shareToEmail, req.permission)
 				}
+
 				else -> {
 					send(
 						SocketResponse(
@@ -165,7 +167,7 @@ try {
 					message = "Share failed: ${e.message}"
 				)
 			)
-}
+		}
 	}
 
 	private fun handleLogin(request: SocketRequest) {
@@ -252,7 +254,7 @@ try {
 		disconnect()
 	}
 
-	private fun handleGet(request: SocketRequest) {
+	private suspend fun handleGet(request: SocketRequest) {
 		val requestId = request.id
 		val payload = request.payload
 		if (userId == null) {
@@ -389,6 +391,13 @@ try {
 						thumbnailBytes = bytes
 					)
 					send(SocketResponse(requestId, response.status, response.message, json.encodeToString(response)))
+				}
+
+				"file-summarize" -> {
+					val fileRecord = FileRepository.getFileById(req.id!!, req.ownerId!!)
+					assert(fileRecord != null)
+					val response = FileSummarizer.request(fileRecord)
+					send(SocketResponse(id = requestId, status = ResponseStatus.SUCCESS, message = "File summarized", data = response))
 				}
 
 				else -> {
@@ -624,6 +633,7 @@ try {
 						)
 					}
 				}
+
 				"folder" -> {
 					val record = FolderRepository.getFolderById(req.id, req.ownerId)
 					assert(record != null) {

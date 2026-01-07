@@ -78,9 +78,7 @@ class ShareViewModel(
 		}
 	}
 
-	fun reload() {
-		TODO("Not yet implemented")
-	}
+	fun reload() = getSharedData()
 }
 
 sealed interface SharedUiItem {
